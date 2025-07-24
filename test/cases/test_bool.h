@@ -47,6 +47,10 @@ int run_bool_test(const bool_test_case_t* tc) {
 }
 
 test_summary_t run_bool_tests() {
+    const char *GREEN = "\033[0;32m";
+    const char *RED = "\033[0;31m";
+    const char *RESET = "\033[0m";
+
     bool_test_case_t bool_tests[] = {
         // Positive cases
         {"true", 0, NULL, 1},
@@ -59,25 +63,59 @@ test_summary_t run_bool_tests() {
         {"", 1, "Empty input", 0},
         {"true false", 1, "Multiple bools", 0},
     };
-    int passed = 0, failed = 0;
     size_t total = sizeof(bool_tests)/sizeof(bool_tests[0]);
     int negative_passed = 0, negative_failed = 0;
     int positive_passed = 0, positive_failed = 0;
-    printf("\n------------------------------\n");
-    printf("[Bool Tests]\n");
-    printf("------------------------------\n");
+    printf("\n[Bool Tests]\n");
+    printf("| %-3s | %-20s | %-20s | %-10s | %-10s |\n", "#", "Input", "Expected", "Result", "Status");
+    printf("|-----|----------------------|----------------------|------------|------------|\n");
     for (size_t i = 0; i < total; ++i) {
-        int res = run_bool_test(&bool_tests[i]);
-        if (bool_tests[i].should_fail) {
-            if (res) ++negative_passed; else ++negative_failed;
+        const bool_test_case_t *tc = &bool_tests[i];
+        cereal_size_t size = strlen(tc->input);
+        json result = parse_json(tc->input, size);
+        int pass = 1;
+        char result_str[32] = "";
+        char status[16] = "";
+        const char *color = GREEN;
+        if (tc->should_fail) {
+            if (!result.failure) {
+                strcpy(status, "FAIL");
+                color = RED;
+                pass = 0;
+                strcpy(result_str, "Parsed");
+            } else {
+                strcpy(status, "PASS");
+                color = GREEN;
+                strcpy(result_str, "Error");
+            }
         } else {
-            if (res) ++positive_passed; else ++positive_failed;
+            if (result.failure) {
+                strcpy(status, "FAIL");
+                color = RED;
+                pass = 0;
+                strcpy(result_str, "Error");
+            } else if (result.root.type != JSON_BOOL || result.root.value.boolean != tc->expected) {
+                strcpy(status, "FAIL");
+                color = RED;
+                pass = 0;
+                snprintf(result_str, sizeof(result_str), "%d", result.root.value.boolean);
+            } else {
+                strcpy(status, "PASS");
+                color = GREEN;
+                snprintf(result_str, sizeof(result_str), "%d", result.root.value.boolean);
+            }
+        }
+        printf("| %-3zu | %-20s | %-20s | %-10s | %s%-10s%s |\n", i+1, tc->input, tc->should_fail ? "-" : (tc->expected ? (tc->expected ? "true" : "false") : "-"), result_str, color, status, RESET);
+        if (tc->should_fail) {
+            if (pass) ++negative_passed; else ++negative_failed;
+        } else {
+            if (pass) ++positive_passed; else ++positive_failed;
         }
     }
+    printf("|-----|----------------------|----------------------|------------|------------|\n");
     printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
     printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
     printf("  Total: %zu\n", total);
-    printf("------------------------------\n");
     test_summary_t summary = {positive_passed + negative_passed, positive_failed + negative_failed, total};
     return summary;
 }
