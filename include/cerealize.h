@@ -97,15 +97,10 @@ bool_t is_number_start(char cur) {
 }
 
 // skip whitespace until next node
-void skip_whitespace(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
+void skip_whitespace(const char* json_string, cereal_size_t length, cereal_uint_t* i) {
     while (is_whitespace(json_string[*i]) && *i < length) {
         (*i)++;
     }
-
-    // if (*i == length) {
-    //     strcat(error_text, "CERIALIZE ERROR: EOF reached during parsing(perhaps missing a closing tag?)\n");
-    //     *failure = TRUE;
-    // }
 }
 
 // string     : array of lex tokens representing string
@@ -211,20 +206,20 @@ bool_t json_parse_boolean(const char* json_string, cereal_uint_t* i, bool_t* fai
 }
 
 json_object parse_json_object(const char* json_string, cereal_size_t length, cereal_uint_t* i, char* error_text, bool_t* failure) {
-    skip_whitespace(json_string, length, i, NULL, NULL);
+    skip_whitespace(json_string, length, i);
 
     json_object obj;
     obj.type = JSON_OBJECT;
 
     char cur = json_string[*i];
     if (cur == LEX_QUOTE) {
-        obj.value.string = json_parse_string(json_string, length, (cereal_uint_t*)i,failure, error_text);
+        obj.value.string = json_parse_string(json_string, length, i,failure, error_text);
         obj.type = JSON_STRING;
         return obj;
     }
 
     if (is_number_start(cur) || cur == LEX_PERIOD) {
-        obj.value.number = json_parse_number(json_string, length, (cereal_uint_t*)i,failure, error_text);
+        obj.value.number = json_parse_number(json_string, length, i, failure, error_text);
         obj.type = JSON_NUMBER;
         return obj;
     }
@@ -249,28 +244,28 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     }
     (*i)++; // move past '{'
 
-    skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+    skip_whitespace(json_string, length, i);
 
     json_node* head = NULL;
     cereal_size_t node_count = 0;
 
     // parse key-value pairs
     while (*i < length) {
-        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        skip_whitespace(json_string, length, i);
 
         if (json_string[*i] == LEX_CLOSE_BRACKET) {
             (*i)++; // move past '}'
             break; // end of object
         }
 
-        char* key = json_parse_string(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        char* key = json_parse_string(json_string, length, i, failure, error_text);
         if (key == NULL) {
             strcat(error_text, "CERIALIZE ERROR: Failed to parse key in JSON object.\n");
             *failure = TRUE;
             return (json_object){0}; // return empty value on error
         }
 
-        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        skip_whitespace(json_string, length, i);
         if (json_string[*i] != LEX_COLON) {
             strcat(error_text, "CERIALIZE ERROR: Expected ':' after key in JSON object.\n");
             *failure = TRUE;
@@ -279,7 +274,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         }
         (*i)++; // move past ':'
 
-        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        skip_whitespace(json_string, length, i);
 
         json_object value = parse_json_object(json_string, length, i, error_text, failure);
         if (*failure) {
@@ -304,7 +299,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         head[node_count - 1] = *new_node;
         free(new_node);
 
-        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        skip_whitespace(json_string, length, i);
         if (json_string[*i] != LEX_COMMA && json_string[*i] != LEX_CLOSE_BRACKET && *i != length) {
             strcat(error_text, "CERIALIZE ERROR: Expected ',' or '}' after key-value pair in JSON object.\n");
             *failure = TRUE;
@@ -313,7 +308,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         }
         (*i)++; // move past ',' or '}'
 
-        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        skip_whitespace(json_string, length, i);
     }
 
 
