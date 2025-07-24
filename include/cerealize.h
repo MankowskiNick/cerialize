@@ -13,34 +13,43 @@ typedef unsigned int cereal_uint_t;
 typedef char bool_t;
 
 
-enum json_type {
-    JSON_KEY,
+typedef enum json_type {
     JSON_OBJECT,
     JSON_STRING,
-    JSON_INT,
-    JSON_REAL,
+    JSON_NUMBER,
     JSON_BOOL,
     JSON_NULL,
-};
+} json_type;
+
+typedef union json_value {
+        char* string;
+        float number;
+        bool_t boolean;
+        bool_t is_null;
+        struct json_node* nodes;
+} json_value;
 
 typedef struct json_node {
     char* key;
-    union {
-        char* string;
-        int integer;
-        float real;
-        char boolean;
-        struct json_node* node;
-    };
+    json_value value;
 } json_node;
+
+
+// need to define json_object that tracks the type, and then moodify the lexer to return this
+typedef struct json_object {
+    json_type type;
+    json_value value;
+} json_object;
+
+
 
 #define JSON_MAX_ERROR_LENGTH 512
 
 typedef struct {
-    json_node* nodes;
-    unsigned int node_count;
+    json_object root;
     char* error_text;
-    unsigned int error_length;
+    cereal_size_t error_length;
+    bool_t failure;
 } json;
 
 // {
@@ -60,20 +69,26 @@ typedef struct {
 
 // lexer
 enum lex_type {
-    LEX_QUOTE = '"',
+    LEX_QUOTE = '\'',
     LEX_COMMA = ',',
+    LEX_PERIOD = '.',
     LEX_OPEN_BRACKET = '{',
     LEX_CLOSE_BRACKET = '}',
-    LEX_COLON = ':'
+    LEX_OPEN_SQUARE = '[',
+    LEX_CLOSE_SQUARE = ']',
+    LEX_COLON = ':',
+    LEX_F = 'f',
+    LEX_T = 't',
+    LEX_N = 'n',
 };
 
 bool_t is_whitespace(char cur) {
     return (cur == ' ' || cur == '\t' || cur == '\n' || cur == '\r');
 }
 
-// bool_t is_number(char cur) {
-//     return (cur >= '0' && cur <= '9');
-// }
+bool_t is_number(char cur) {
+    return (cur >= '0' && cur <= '9');
+}
 
 // skip whitespace until next node
 void skip_whitespace(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
@@ -140,82 +155,186 @@ char* json_parse_string(const char* json_string, cereal_size_t length, cereal_ui
     return str;
 }
 
-cereal_size_t get_node_count(const char* tokens, cereal_size_t length, bool_t* failure, char* error_text) {
-    // COUNTING - TODO: move counting to separate method
-    if (tokens[0] != LEX_OPEN_BRACKET) {
-        strcat(error_text, "CERIALIZE ERROR: Missing opening bracket( '{' ).\n");
+bool_t json_parse_null(const char* json_string, cereal_uint_t* i, bool_t* failure, char* error_text) {
+    // check for "null"
+    if (strncmp(&json_string[*i], "null", 4) != 0) {
+        strcat(error_text, "CERIALIZE ERROR: Expected 'null' keyword.\n");
         *failure = TRUE;
+        return FALSE;;
+    }
+    *i += 4; // move past "null"
+    return TRUE; // return null pointer for JSON null
+}
+
+float json_parse_number(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
+    // check for valid number format
+    cereal_uint_t start = *i;
+    while (*i < length && (is_number(json_string[*i]) || json_string[*i] == LEX_PERIOD)) {
+        (*i)++;
     }
 
-    cereal_uint_t i = 1; // skip opening '{'
-    cereal_size_t node_count = 0;
-    do {
-        if (*failure) {
-            break;
-        }
-
-        // parse key
-        skip_whitespace(tokens, length, &i, failure, error_text);
-        json_parse_string(tokens, length, &i, failure, error_text);
-        if (*failure) {
-            return 0;
-        }
-
-        // colon
-        skip_whitespace(tokens, length, &i, failure, error_text);
-        if (*failure) {
-            return 0;
-        }
-        if (tokens[i] != LEX_COLON) {
-            strcat(error_text, "CERIALIZE ERROR: No value found associated with key(missing ':')");
-            *failure = TRUE;
-            return 0;
-        }
-        i++;
-        
-        // value
-
-        // comma
-
-
-    } while (i++ < length); // skip past closing '}'
-
-    if (tokens[length - 1] != LEX_CLOSE_BRACKET) {
-        strcat(error_text, "CERIALIZE ERROR: Missing opening bracket( '}' ).\n");
+    if (start == *i) {
+        strcat(error_text, "CERIALIZE ERROR: Expected number.\n");
         *failure = TRUE;
+        return 0.0f;
+    }
+
+    // extract number substring 
+    float value = strtof(&json_string[start], NULL);
+    return value;
+}
+
+bool_t json_parse_boolean(const char* json_string, cereal_uint_t* i, bool_t* failure, char* error_text) {
+    if (strncmp(&json_string[*i], "true", 4) == 0) {
+        *i += 4;
+        return TRUE;
+    } else if (strncmp(&json_string[*i], "false", 5) == 0) {
+        *i += 5;
+        return FALSE;
+    } else {
+        strcat(error_text, "CERIALIZE ERROR: Expected 'true' or 'false'.\n");
+        *failure = TRUE;
+        return FALSE; // default return value
+    }
+}
+
+json_object parse_json_object(const char* json_string, cereal_size_t length, cereal_uint_t* i, char* error_text, bool_t* failure) {
+    skip_whitespace(json_string, length, i, NULL, NULL);
+
+    json_object obj;
+    obj.type = JSON_OBJECT;
+
+    char cur = json_string[*i];
+    if (cur == LEX_QUOTE) {
+        obj.value.string = json_parse_string(json_string, length, (cereal_uint_t*)i,failure, error_text);
+        obj.type = JSON_STRING;
+        return obj;
+    }
+
+    if (is_number(cur) || cur == LEX_PERIOD) {
+        obj.value.number = json_parse_number(json_string, length, (cereal_uint_t*)i,failure, error_text);
+        obj.type = JSON_NUMBER;
+        return obj;
+    }
+
+    if (cur == LEX_N) {
+        obj.value.is_null = json_parse_null(json_string, (cereal_uint_t*)i, failure, error_text);
+        obj.type = JSON_NULL;
+        return obj;
+    }
+
+    if (cur == LEX_T || cur == LEX_F) {
+        obj.value.boolean = json_parse_boolean(json_string, (cereal_uint_t*)i,failure, error_text);
+        obj.type = JSON_BOOL;
+        return obj;
     }
     
-    return node_count;
+    // parse build object
+    if (cur != LEX_OPEN_BRACKET) {
+        strcat(error_text, "CERIALIZE ERROR: Expected opening bracket '{' for JSON object.\n");
+        *failure = TRUE;
+        return (json_object){0}; // return empty value on error
+    }
+    (*i)++; // move past '{'
+
+    skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+
+    json_node* head = NULL;
+    cereal_size_t node_count = 0;
+
+    // parse key-value pairs
+    while (*i < length) {
+        if (json_string[*i] == LEX_CLOSE_BRACKET) {
+            (*i)++; // move past '}'
+            break; // end of object
+        }
+
+        char* key = json_parse_string(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        if (key == NULL) {
+            strcat(error_text, "CERIALIZE ERROR: Failed to parse key in JSON object.\n");
+            *failure = TRUE;
+            return (json_object){0}; // return empty value on error
+        }
+
+        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        if (json_string[*i] != LEX_COLON) {
+            strcat(error_text, "CERIALIZE ERROR: Expected ':' after key in JSON object.\n");
+            *failure = TRUE;
+            free(key);
+            return (json_object){0}; // return empty value on error
+        }
+        (*i)++; // move past ':'
+
+        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+
+        json_object value = parse_json_object(json_string, length, i, error_text, failure);
+        if (*failure) {
+            strcat(error_text, "CERIALIZE ERROR: Failed to parse value in JSON object.\n");
+            free(key);
+            return (json_object){0}; // return empty value on error
+        }
+
+        // create new node
+        json_node* new_node = (json_node*)malloc(sizeof(json_node));
+        new_node->key = key;
+        new_node->value = value.value; // copy the value
+
+        node_count++;
+        head = realloc(head, sizeof(json_node) * node_count);
+        if (head == NULL) {
+            strcat(error_text, "CERIALIZE ERROR: Failed to allocate memory for JSON object.\n");
+            *failure = TRUE;
+            free(key);
+            return (json_object){0}; // return empty value on error
+        }
+        head[node_count - 1] = *new_node;
+        free(new_node);
+
+        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+        if (json_string[*i] != LEX_COMMA) {
+            strcat(error_text, "CERIALIZE ERROR: Expected ',' after key-value pair in JSON object.\n");
+            *failure = TRUE;
+            free(key);
+            return (json_object){0}; // return empty value on error
+        }
+        (*i)++; // move past ','
+
+        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+    }
+
+
+    // create the json_object
+    obj.value.nodes = head; // assign the linked list of nodes
+    obj.type = JSON_OBJECT;
+
+    return obj;
 }
 
 // parse json
 json parse_json(const char* json_string, cereal_size_t length) {
 
     bool_t failure = FALSE;
-    char error_text[JSON_MAX_ERROR_LENGTH] = "";
-
-    cereal_size_t node_count = get_node_count(json_string, length, &failure, error_text);
-
-    if (failure) {
-        json result = {0};
-        result.error_text = error_text;
-        result.error_length = JSON_MAX_ERROR_LENGTH;
+    char* error_text = malloc(JSON_MAX_ERROR_LENGTH);
+    if (error_text == NULL) {
+        json result = {
+            .root = {0},
+            .failure = TRUE,
+            .error_text = "CERIALIZE ERROR: Failed to allocate memory for error text.\n",
+            .error_length = strlen("CERIALIZE ERROR: Failed to allocate memory for error text.\n")
+        };
         return result;
     }
 
-    // capture nodes based on tokenization
-    // json_node nodes[node_count]; // unused variable, remove to fix warning
+    // TODO: parse json object
+    cereal_uint_t i = 0;
+    json_object root_value = parse_json_object(json_string, length, &i, error_text, &failure);
 
-    cereal_uint_t i = 1; // skip opening '{'
-    do {
-        
-        // TODO: try to parse key, colon, object, comma
+    json result = {
+        .root = root_value,
+        .failure = failure,
+        .error_text = error_text
+    };
 
-    } while (i++ < length - 1); // skip past closing '}'
-
-    json result = {0};
-    // result.nodes = nodes; // nodes not actually populated
-    result.node_count = node_count;
     return result;
 }
 
