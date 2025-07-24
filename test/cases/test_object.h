@@ -8,25 +8,37 @@ typedef struct {
     const char* expected;
 } object_test_case_t;
 
-int run_object_test(const object_test_case_t* tc) {
+int run_object_test(const object_test_case_t* tc, size_t test_num) {
     cereal_size_t size = strlen(tc->input);
     json result = parse_json(tc->input, size);
-    printf("Test: parse object '%s'...\n", tc->input);
+    printf("  Test %zu:\n", test_num + 1);
+    // Print input, indenting each line
+    const char* p = tc->input;
+    printf("    Input:\n");
+    while (*p) {
+        printf("      ");
+        while (*p && *p != '\n') {
+            putchar(*p);
+            ++p;
+        }
+        putchar('\n');
+        if (*p == '\n') ++p;
+    }
     int pass = 1;
     if (result.failure) {
-        printf("  FAIL: Should parse object without failure\n");
+        printf("    Result: FAIL (Should parse object without failure)\n");
         pass = 0;
     }
     if (result.root.type != JSON_OBJECT) {
-        printf("  FAIL: Root type should be JSON_OBJECT (got %d)\n", result.root.type);
+        printf("    Result: FAIL (Root type should be JSON_OBJECT, got %d)\n", result.root.type);
         pass = 0;
     }
     if (result.root.value.nodes == NULL) {
-        printf("  FAIL: Root nodes should not be NULL\n");
+        printf("    Result: FAIL (Root nodes should not be NULL)\n");
         pass = 0;
     }
     if (pass) {
-        printf("  PASS\n");
+        printf("    Result: PASS\n");
     }
     return pass;
 }
@@ -50,11 +62,15 @@ test_summary_t run_object_tests() {
     };
     int passed = 0, failed = 0;
     size_t total = sizeof(object_tests)/sizeof(object_tests[0]);
+    printf("\n------------------------------\n");
+    printf("[Object Tests]\n");
+    printf("------------------------------\n");
     for (size_t i = 0; i < total; ++i) {
-        int res = run_object_test(&object_tests[i]);
+        int res = run_object_test(&object_tests[i], i);
         if (res) ++passed; else ++failed;
     }
-    printf("\nObject Test Results: %d passed, %d failed, %zu total\n", passed, failed, total);
+    printf("  Result: %d passed, %d failed, %zu total\n", passed, failed, total);
+    printf("------------------------------\n");
     test_summary_t summary = {passed, failed, total};
     return summary;
 }

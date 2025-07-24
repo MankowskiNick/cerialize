@@ -11,7 +11,7 @@ typedef struct {
 int run_string_test(const string_test_case_t* tc) {
     cereal_size_t size = strlen(tc->input);
     json result = parse_json(tc->input, size);
-    printf("Test: parse string '%s'...\n", tc->input);
+    printf("    Test: '%s'\n", tc->input);
     int pass = 1;
     if (result.failure) {
         printf("  FAIL: Should parse string without failure\n");
@@ -41,11 +41,15 @@ test_summary_t run_string_tests() {
     };
     int passed = 0, failed = 0;
     size_t total = sizeof(string_tests)/sizeof(string_tests[0]);
+    printf("\n------------------------------\n");
+    printf("[String Tests]\n");
+    printf("------------------------------\n");
     for (size_t i = 0; i < total; ++i) {
         int res = run_string_test(&string_tests[i]);
         if (res) ++passed; else ++failed;
     }
-    printf("\nString Test Results: %d passed, %d failed, %zu total\n", passed, failed, total);
+    printf("  Result: %d passed, %d failed, %zu total\n", passed, failed, total);
+    printf("------------------------------\n");
     test_summary_t summary = {passed, failed, total};
     return summary;
 }

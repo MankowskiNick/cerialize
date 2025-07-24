@@ -20,7 +20,11 @@ int main() {
     size_t total_tests = string_summary.total + number_summary.total + null_summary.total + bool_summary.total + object_summary.total;
 
     printf("\n==============================\n");
-    printf("Aggregate Test Results: %d passed, %d failed, %zu total\n", total_passed, total_failed, total_tests);
+    printf("[Aggregate Test Results]\n");
+    printf("==============================\n");
+    printf("  Total Passed: %d\n", total_passed);
+    printf("  Total Failed: %d\n", total_failed);
+    printf("  Total Tests:  %zu\n", total_tests);
     printf("==============================\n");
     printf("\nAll tests completed.\n");
     return 0;
