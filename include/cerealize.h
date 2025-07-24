@@ -209,7 +209,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     skip_whitespace(json_string, length, i);
 
     json_object obj;
-    obj.type = JSON_OBJECT;
+    // obj.type = JSON_OBJECT;
 
     char cur = json_string[*i];
     if (cur == LEX_QUOTE) {
@@ -252,7 +252,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     // parse key-value pairs
     while (*i < length) {
         skip_whitespace(json_string, length, i);
-
+        cur = json_string[*i];
         if (json_string[*i] == LEX_CLOSE_BRACKET) {
             (*i)++; // move past '}'
             break; // end of object
@@ -306,7 +306,15 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
             free(key);
             return (json_object){0}; // return empty value on error
         }
-        (*i)++; // move past ',' or '}'
+        if (json_string[*i] == LEX_CLOSE_BRACKET) {
+            (*i)++; // move past '}'
+        }
+
+        skip_whitespace(json_string, length, i);
+        
+        if (json_string[*i] == LEX_COMMA) {
+            (*i)++; // move past ','
+        }
 
         skip_whitespace(json_string, length, i);
     }

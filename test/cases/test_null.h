@@ -7,22 +7,42 @@ typedef struct {
     const char* input;
 } null_test_case_t;
 
-void run_null_test(const null_test_case_t* tc) {
+int run_null_test(const null_test_case_t* tc) {
     cereal_size_t size = strlen(tc->input);
     json result = parse_json(tc->input, size);
     printf("Test: parse null '%s'...\n", tc->input);
-    ASSERT_TRUE(!result.failure, "Should parse null without failure");
-    ASSERT_TRUE_FMT(result.root.type == JSON_NULL, "Root type should be JSON_NULL", "%d", result.root.type);
-    ASSERT_TRUE_FMT(result.root.value.is_null, "Root is_null should be true", "%d", result.root.value.is_null);
+    int pass = 1;
+    if (result.failure) {
+        printf("  FAIL: Should parse null without failure\n");
+        pass = 0;
+    }
+    if (result.root.type != JSON_NULL) {
+        printf("  FAIL: Root type should be JSON_NULL (got %d)\n", result.root.type);
+        pass = 0;
+    }
+    if (!result.root.value.is_null) {
+        printf("  FAIL: Root is_null should be true\n");
+        pass = 0;
+    }
+    if (pass) {
+        printf("  PASS\n");
+    }
+    return pass;
 }
 
-void run_null_tests() {
+test_summary_t run_null_tests() {
     null_test_case_t null_tests[] = {
         {"null"},
         {"  null  "},
         {"\tnull\n"},
     };
-    for (size_t i = 0; i < sizeof(null_tests)/sizeof(null_tests[0]); ++i) {
-        run_null_test(&null_tests[i]);
+    int passed = 0, failed = 0;
+    size_t total = sizeof(null_tests)/sizeof(null_tests[0]);
+    for (size_t i = 0; i < total; ++i) {
+        int res = run_null_test(&null_tests[i]);
+        if (res) ++passed; else ++failed;
     }
+    printf("\nNull Test Results: %d passed, %d failed, %zu total\n", passed, failed, total);
+    test_summary_t summary = {passed, failed, total};
+    return summary;
 }

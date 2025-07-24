@@ -1,3 +1,12 @@
+#define EPSILON 1e-5
+#ifndef TEST_UTILS_H
+#define TEST_UTILS_H
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "cerealize.h"
+
+typedef struct { int passed, failed; size_t total; } test_summary_t;
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
 #include <stdio.h>
@@ -38,4 +47,6 @@ void assert_true(int condition, const char* message) {
         printf("  [FAIL] %s\n", message);
     }
 }
+
+#endif
 #endif // TEST_UTILS_H
