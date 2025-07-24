@@ -134,6 +134,7 @@ int main() {
     }
 
     object_test_case_t object_tests[] = {
+        {"{'example':{'nested':{'key':'value'},'name':'example','value':42}}"},
         {"{'example':{'name':'example','value':42,'nested':{'key':'value'}}}"},
     };
     for (size_t i = 0; i < sizeof(object_tests)/sizeof(object_tests[0]); ++i) {

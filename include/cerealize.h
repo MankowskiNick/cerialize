@@ -27,6 +27,7 @@ typedef union json_value {
         bool_t boolean;
         bool_t is_null;
         struct json_node* nodes;
+        cereal_size_t node_count;
 } json_value;
 
 typedef struct json_node {
@@ -101,10 +102,10 @@ void skip_whitespace(const char* json_string, cereal_size_t length, cereal_uint_
         (*i)++;
     }
 
-    if (*i == length) {
-        strcat(error_text, "CERIALIZE ERROR: EOF reached during parsing(perhaps missing a closing tag?)\n");
-        *failure = TRUE;
-    }
+    // if (*i == length) {
+    //     strcat(error_text, "CERIALIZE ERROR: EOF reached during parsing(perhaps missing a closing tag?)\n");
+    //     *failure = TRUE;
+    // }
 }
 
 // string     : array of lex tokens representing string
@@ -255,6 +256,8 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
 
     // parse key-value pairs
     while (*i < length) {
+        skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
+
         if (json_string[*i] == LEX_CLOSE_BRACKET) {
             (*i)++; // move past '}'
             break; // end of object
@@ -302,13 +305,13 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         free(new_node);
 
         skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
-        if (json_string[*i] != LEX_COMMA) {
-            strcat(error_text, "CERIALIZE ERROR: Expected ',' after key-value pair in JSON object.\n");
+        if (json_string[*i] != LEX_COMMA && json_string[*i] != LEX_CLOSE_BRACKET && *i != length) {
+            strcat(error_text, "CERIALIZE ERROR: Expected ',' or '}' after key-value pair in JSON object.\n");
             *failure = TRUE;
             free(key);
             return (json_object){0}; // return empty value on error
         }
-        (*i)++; // move past ','
+        (*i)++; // move past ',' or '}'
 
         skip_whitespace(json_string, length, (cereal_uint_t*)i, failure, error_text);
     }
@@ -316,6 +319,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
 
     // create the json_object
     obj.value.nodes = head; // assign the linked list of nodes
+    obj.value.node_count = node_count; // store the number of nodes
     obj.type = JSON_OBJECT;
 
     return obj;
