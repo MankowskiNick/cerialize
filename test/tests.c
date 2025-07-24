@@ -1,4 +1,6 @@
+
 #include <stdio.h>
+#include "../helpers/test_output_helper.h"
 #include "cases/test_bool.h"
 #include "cases/test_null.h"
 #include "cases/test_number.h"

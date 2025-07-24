@@ -1,7 +1,9 @@
+
 #include <stdio.h>
 #include <string.h>
 #include "cerealize.h"
 #include "../helpers/test_utils.h"
+#include "../helpers/test_output_helper.h"
 
 typedef struct {
     const char* input;
@@ -78,8 +80,9 @@ test_summary_t run_object_tests() {
     };
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
-    const char *YELLOW = "\033[1;33m";
+    // const char *YELLOW = "\033[1;33m";
     const char *RESET = "\033[0m";
+    // ...existing code...
 
     size_t total = sizeof(object_tests)/sizeof(object_tests[0]);
     int negative_passed = 0, negative_failed = 0;
@@ -95,7 +98,8 @@ test_summary_t run_object_tests() {
         char result_str[32] = "";
         char status[16] = "";
         const char *color = GREEN;
-        char input_display[40];
+        char input_display[41];
+        // Use test output helper for formatting and printing
         if (tc->should_fail) {
             if (!result.failure) {
                 strcpy(status, "FAIL");
@@ -124,19 +128,8 @@ test_summary_t run_object_tests() {
                 strcpy(result_str, "Object");
             }
         }
-        snprintf(input_display, sizeof(input_display), "%s", tc->input);
-        for (size_t j = 0; j < strlen(input_display); ++j) {
-            if (input_display[j] == '\n' || input_display[j] == '\r' || input_display[j] == '\t') {
-                input_display[j] = ' ';
-            }
-        }
-        if (strlen(tc->input) > 40) {
-            input_display[37] = '.';
-            input_display[38] = '.';
-            input_display[39] = '.';
-            input_display[40] = '\0';
-        }
-        printf("| %-3zu | %-40s | %-10s | %s%-10s%s |\n", i+1, input_display, result_str, color, status, RESET);
+        format_input_display(tc->input, input_display, sizeof(input_display));
+        print_test_row(i+1, input_display, result_str, status, color, RESET, 40, 10, 10);
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {

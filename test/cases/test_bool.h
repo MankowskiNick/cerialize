@@ -50,6 +50,7 @@ test_summary_t run_bool_tests() {
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
     const char *RESET = "\033[0m";
+    #include "../helpers/test_output_helper.h"
 
     bool_test_case_t bool_tests[] = {
         // Positive cases
@@ -77,6 +78,8 @@ test_summary_t run_bool_tests() {
         char result_str[32] = "";
         char status[16] = "";
         const char *color = GREEN;
+        char input_display[21];
+        char expected_str[21];
         if (tc->should_fail) {
             if (!result.failure) {
                 strcpy(status, "FAIL");
@@ -105,7 +108,12 @@ test_summary_t run_bool_tests() {
                 snprintf(result_str, sizeof(result_str), "%d", result.root.value.boolean);
             }
         }
-        printf("| %-3zu | %-20s | %-20s | %-10s | %s%-10s%s |\n", i+1, tc->input, tc->should_fail ? "-" : (tc->expected ? (tc->expected ? "true" : "false") : "-"), result_str, color, status, RESET);
+        format_input_display(tc->input, input_display, sizeof(input_display));
+        if (!tc->should_fail)
+            snprintf(expected_str, sizeof(expected_str), "%s", tc->expected ? "true" : "false");
+        else
+            strcpy(expected_str, "-");
+        print_test_row(i+1, input_display, expected_str, result_str, color, RESET, 20, 20, 10);
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {

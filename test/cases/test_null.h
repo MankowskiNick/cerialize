@@ -1,7 +1,9 @@
+
 #include <stdio.h>
 #include <string.h>
 #include "cerealize.h"
 #include "../helpers/test_utils.h"
+#include "../helpers/test_output_helper.h"
 
 typedef struct {
     const char* input;
@@ -49,6 +51,7 @@ test_summary_t run_null_tests() {
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
     const char *RESET = "\033[0m";
+    // ...existing code...
 
     null_test_case_t null_tests[] = {
         // Positive cases
@@ -76,6 +79,9 @@ test_summary_t run_null_tests() {
         char result_str[32] = "";
         char status[16] = "";
         const char *color = GREEN;
+        char input_display[21];
+        char expected_str[21];
+        // Use test output helper for formatting and printing
         if (tc->should_fail) {
             if (!result.failure) {
                 strcpy(status, "FAIL");
@@ -104,7 +110,12 @@ test_summary_t run_null_tests() {
                 strcpy(result_str, "null");
             }
         }
-        printf("| %-3zu | %-20s | %-20s | %-10s | %s%-10s%s |\n", i+1, tc->input, tc->should_fail ? "-" : "null", result_str, color, status, RESET);
+        format_input_display(tc->input, input_display, sizeof(input_display));
+        if (!tc->should_fail)
+            strcpy(expected_str, "null");
+        else
+            strcpy(expected_str, "-");
+        print_test_row(i+1, input_display, expected_str, result_str, color, RESET, 20, 20, 10);
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {

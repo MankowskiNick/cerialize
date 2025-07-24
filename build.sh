@@ -15,6 +15,6 @@ fi
 mkdir -p build
 
 # Compile using the real include path for accurate error locations
-gcc -std=c99 -Wall -Wextra -Iinclude -Itest/helpers -Itest/cases -o build/tests test/tests.c -g
+gcc -std=c99 -Wall -Wextra -Iinclude -Itest/helpers -Itest/cases -o build/tests test/tests.c test/helpers/test_output_helper.c -g
 
 echo "Compilation successful."

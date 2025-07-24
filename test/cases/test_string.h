@@ -1,7 +1,9 @@
+
 #include <stdio.h>
 #include <string.h>
 #include "cerealize.h"
 #include "../helpers/test_utils.h"
+#include "../helpers/test_output_helper.h"
 
 typedef struct {
     const char* input;
@@ -63,8 +65,9 @@ test_summary_t run_string_tests() {
     };
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
-    const char *YELLOW = "\033[1;33m";
+    // const char *YELLOW = "\033[1;33m";
     const char *RESET = "\033[0m";
+    // ...existing code...
 
     size_t total = sizeof(string_tests)/sizeof(string_tests[0]);
     int negative_passed = 0, negative_failed = 0;
@@ -80,6 +83,8 @@ test_summary_t run_string_tests() {
         char result_str[32] = "";
         char status[16] = "";
         const char *color = GREEN;
+        char input_display[21];
+        // Use test output helper for formatting and printing
         if (tc->should_fail) {
             if (!result.failure) {
                 strcpy(status, "FAIL");
@@ -108,7 +113,8 @@ test_summary_t run_string_tests() {
                 snprintf(result_str, sizeof(result_str), "%s", result.root.value.string);
             }
         }
-        printf("| %-3zu | %-20s | %-20s | %-10s | %s%-10s%s |\n", i+1, tc->input, tc->expected ? tc->expected : "-", result_str, color, status, RESET);
+        format_input_display(tc->input, input_display, sizeof(input_display));
+        print_test_row(i+1, input_display, tc->expected ? tc->expected : "-", result_str, color, RESET, 20, 20, 10);
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {

@@ -203,7 +203,6 @@ float json_parse_number(const char* json_string, cereal_size_t length, cereal_ui
     cereal_uint_t start = *i;
     // Accept optional sign at the start
     if (*i < length && (json_string[*i] == '-' || json_string[*i] == '+')) {
-        char first_sign = json_string[*i];
         (*i)++;
         // If another sign immediately follows, it's invalid
         if (*i < length && (json_string[*i] == '-' || json_string[*i] == '+')) {
