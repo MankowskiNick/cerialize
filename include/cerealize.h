@@ -90,6 +90,11 @@ bool_t is_number(char cur) {
     return (cur >= '0' && cur <= '9');
 }
 
+// Accepts a sign or digit as the first character of a number
+bool_t is_number_start(char cur) {
+    return (cur == '-' || cur == '+' || (cur >= '0' && cur <= '9'));
+}
+
 // skip whitespace until next node
 void skip_whitespace(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
     while (is_whitespace(json_string[*i]) && *i < length) {
@@ -169,11 +174,17 @@ bool_t json_parse_null(const char* json_string, cereal_uint_t* i, bool_t* failur
 float json_parse_number(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
     // check for valid number format
     cereal_uint_t start = *i;
+    // Accept optional sign at the start
+    if (*i < length && (json_string[*i] == '-' || json_string[*i] == '+')) {
+        (*i)++;
+    }
+    bool_t found_digit = 0;
     while (*i < length && (is_number(json_string[*i]) || json_string[*i] == LEX_PERIOD)) {
+        if (is_number(json_string[*i])) found_digit = 1;
         (*i)++;
     }
 
-    if (start == *i) {
+    if (!found_digit) {
         strcat(error_text, "CERIALIZE ERROR: Expected number.\n");
         *failure = TRUE;
         return 0.0f;
@@ -211,7 +222,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         return obj;
     }
 
-    if (is_number(cur) || cur == LEX_PERIOD) {
+    if (is_number_start(cur) || cur == LEX_PERIOD) {
         obj.value.number = json_parse_number(json_string, length, (cereal_uint_t*)i,failure, error_text);
         obj.type = JSON_NUMBER;
         return obj;
