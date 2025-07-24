@@ -5,7 +5,8 @@
 
 typedef struct {
     const char* input;
-    const char* expected;
+    int should_fail; // 1 for negative, 0 for positive
+    const char* expected_error; // Optional: expected error message/type
 } object_test_case_t;
 
 int run_object_test(const object_test_case_t* tc, size_t test_num) {
@@ -25,6 +26,19 @@ int run_object_test(const object_test_case_t* tc, size_t test_num) {
         if (*p == '\n') ++p;
     }
     int pass = 1;
+    if (tc->should_fail) {
+        if (!result.failure) {
+            printf("    Result: FAIL (Should fail to parse, but succeeded)\n");
+            pass = 0;
+        } else {
+            printf("    Result: PASS (Correctly failed to parse)\n");
+            if (tc->expected_error) {
+                printf("      Expected error: %s\n", tc->expected_error);
+            }
+        }
+        return pass;
+    }
+    // Positive test logic
     if (result.failure) {
         printf("    Result: FAIL (Should parse object without failure)\n");
         pass = 0;
@@ -45,32 +59,42 @@ int run_object_test(const object_test_case_t* tc, size_t test_num) {
 
 test_summary_t run_object_tests() {
     object_test_case_t object_tests[] = {
-        // No whitespace
-        {"{'example':{'nested':{'key':'value'},'name':'example','value':42}}", "expected_value_1"},
-        // Different key order
-        {"{'example':{'name':'example','value':42,'nested':{'key':'value'}}}", "expected_value_2"},
-        // Whitespace between keys and values
-        {"{  'example'  :  {  'nested'  :  {  'key'  :  'value'  }  ,  'name'  :  'example'  ,  'value'  :  42  }  }", "expected_value_3"},
-        // Newlines and tabs
-        {"{\n\t'example' : {\n\t\t'nested' : {\n\t\t\t'key' : 'value'\n\t\t},\n\t\t'name' : 'example',\n\t\t'value' : 42\n\t}\n}", "expected_value_4"},
-        // Whitespace before and after object
-        {"   { 'a' : 1, 'b' : 2 }   ", "expected_value_5"},
-        // Multiple spaces and newlines between pairs
-        {"{\n  'x' : 10,\n\n  'y' : 20\n}\n", "expected_value_6"},
-        // Tabs and spaces mixed
-        {"{\t'a' : 123 ,\t'b' : 456 }", "expected_value_7"},
+        // Positive cases
+        {"{'example':{'nested':{'key':'value'},'name':'example','value':42}}", 0, NULL},
+        {"{'example':{'name':'example','value':42,'nested':{'key':'value'}}}", 0, NULL},
+        {"{  'example'  :  {  'nested'  :  {  'key'  :  'value'  }  ,  'name'  :  'example'  ,  'value'  :  42  }  }", 0, NULL},
+        {"{\n\t'example' : {\n\t\t'nested' : {\n\t\t\t'key' : 'value'\n\t\t},\n\t\t'name' : 'example',\n\t\t'value' : 42\n\t}\n}", 0, NULL},
+        {"   { 'a' : 1, 'b' : 2 }   ", 0, NULL},
+        {"{\n  'x' : 10,\n\n  'y' : 20\n}\n", 0, NULL},
+        {"{\t'a' : 123 ,\t'b' : 456 }", 0, NULL},
+        // Negative cases
+        {"{'example': { 'nested': { 'key': value }}}", 1, "Missing quotes around value"},
+        {"{ 'a': }", 1, "Missing value for 'a'"},
+        {"{ 'a' 1 }", 1, "Missing colon between key and value"},
+        {"{ 'a': 1, 'b' }", 1, "Missing value for 'b'"},
+        {"{ 'a': 1, , 'b': 2 }", 1, "Extra comma"},
+        {"{ 'a': 1 'b': 2 }", 1, "Missing comma between pairs"},
+        {"{ 'a': 1, 'b': 2", 1, "Unclosed object"},
     };
     int passed = 0, failed = 0;
     size_t total = sizeof(object_tests)/sizeof(object_tests[0]);
+    int negative_passed = 0, negative_failed = 0;
+    int positive_passed = 0, positive_failed = 0;
     printf("\n------------------------------\n");
     printf("[Object Tests]\n");
     printf("------------------------------\n");
     for (size_t i = 0; i < total; ++i) {
         int res = run_object_test(&object_tests[i], i);
-        if (res) ++passed; else ++failed;
+        if (object_tests[i].should_fail) {
+            if (res) ++negative_passed; else ++negative_failed;
+        } else {
+            if (res) ++positive_passed; else ++positive_failed;
+        }
     }
-    printf("  Result: %d passed, %d failed, %zu total\n", passed, failed, total);
+    printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
+    printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
+    printf("  Total: %zu\n", total);
     printf("------------------------------\n");
-    test_summary_t summary = {passed, failed, total};
+    test_summary_t summary = {positive_passed + negative_passed, positive_failed + negative_failed, total};
     return summary;
 }

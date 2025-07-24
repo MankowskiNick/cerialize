@@ -119,25 +119,40 @@ char* json_parse_string(const char* json_string, cereal_size_t length, cereal_ui
     }
     (*i)++;
 
-
     // find length of string so we allocate the proper size
     cereal_size_t str_size = 0;
     bool_t found_end = FALSE;
+    bool_t found_newline = FALSE;
     cereal_uint_t j = *i;
     do {
         if (j >= length) {
-            strcat(error_text, "CEREALIZE ERROR: Expecting closing quote to close JSON string.\n");
+            strcat(error_text, "CERIALIZE ERROR: Expecting closing quote to close JSON string.\n");
             *failure = TRUE;
             return NULL;
         }
-
+        if (json_string[j] == '\n' || json_string[j] == '\r') {
+            found_newline = TRUE;
+            break;
+        }
         if (json_string[j] == LEX_QUOTE) {
             found_end = TRUE;
         } else {
             str_size++;
         }
-
     } while(!found_end && j++ < length);
+
+    // Reject empty string
+    if (str_size == 0) {
+        strcat(error_text, "CERIALIZE ERROR: Empty string not allowed.\n");
+        *failure = TRUE;
+        return NULL;
+    }
+    // Reject string with newline inside
+    if (found_newline) {
+        strcat(error_text, "CERIALIZE ERROR: Newline in string not allowed.\n");
+        *failure = TRUE;
+        return NULL;
+    }
 
     char* str = (char*)malloc(str_size);
     for (cereal_uint_t j = 0; j < str_size; j++) {
@@ -147,7 +162,7 @@ char* json_parse_string(const char* json_string, cereal_size_t length, cereal_ui
 
     // closing "'"
     if (json_string[*i] != LEX_QUOTE) {
-        strcat(error_text, "CERIALIZE ERROR: Expected quote to open JSON string.\n");
+        strcat(error_text, "CERIALIZE ERROR: Expected closing quote to close JSON string.\n");
         *failure = TRUE;
         return NULL;
     }
@@ -161,10 +176,26 @@ bool_t json_parse_null(const char* json_string, cereal_uint_t* i, bool_t* failur
     if (strncmp(&json_string[*i], "null", 4) != 0) {
         strcat(error_text, "CERIALIZE ERROR: Expected 'null' keyword.\n");
         *failure = TRUE;
-        return FALSE;;
+        return FALSE;
     }
-    *i += 4; // move past "null"
-    return TRUE; // return null pointer for JSON null
+    // Check next char is delimiter or end
+    char next = json_string[*i + 4];
+    if (next == '\0' || next == ',' || next == '}' || next == ']' || is_whitespace(next)) {
+        *i += 4;
+        // Check for extra null after delimiter (e.g. "null null")
+        cereal_uint_t temp_i = *i;
+        skip_whitespace(json_string, strlen(json_string), &temp_i);
+        if (strncmp(&json_string[temp_i], "null", 4) == 0) {
+            strcat(error_text, "CERIALIZE ERROR: Multiple null values not allowed.\n");
+            *failure = TRUE;
+            return FALSE;
+        }
+        return TRUE;
+    } else {
+        strcat(error_text, "CERIALIZE ERROR: Unexpected characters after 'null'.\n");
+        *failure = TRUE;
+        return FALSE;
+    }
 }
 
 float json_parse_number(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
@@ -172,11 +203,51 @@ float json_parse_number(const char* json_string, cereal_size_t length, cereal_ui
     cereal_uint_t start = *i;
     // Accept optional sign at the start
     if (*i < length && (json_string[*i] == '-' || json_string[*i] == '+')) {
+        char first_sign = json_string[*i];
         (*i)++;
+        // If another sign immediately follows, it's invalid
+        if (*i < length && (json_string[*i] == '-' || json_string[*i] == '+')) {
+            strcat(error_text, "CERIALIZE ERROR: Multiple consecutive signs in number.\n");
+            *failure = TRUE;
+            return 0.0f;
+        }
     }
     bool_t found_digit = 0;
-    while (*i < length && (is_number(json_string[*i]) || json_string[*i] == LEX_PERIOD)) {
-        if (is_number(json_string[*i])) found_digit = 1;
+    int period_count = 0;
+    int e_count = 0;
+    bool_t after_e = FALSE;
+    while (*i < length && (is_number(json_string[*i]) || json_string[*i] == LEX_PERIOD || json_string[*i] == 'e' || json_string[*i] == 'E' || json_string[*i] == '-' || json_string[*i] == '+')) {
+        if (is_number(json_string[*i])) {
+            found_digit = 1;
+            after_e = FALSE;
+        }
+        if (json_string[*i] == LEX_PERIOD) {
+            period_count++;
+            if (period_count > 1) {
+                strcat(error_text, "CERIALIZE ERROR: Multiple decimal points in number.\n");
+                *failure = TRUE;
+                return 0.0f;
+            }
+        }
+        if (json_string[*i] == 'e' || json_string[*i] == 'E') {
+            e_count++;
+            after_e = TRUE;
+            // Check for multiple e's
+            if (e_count > 1) {
+                strcat(error_text, "CERIALIZE ERROR: Multiple exponents in number.\n");
+                *failure = TRUE;
+                return 0.0f;
+            }
+        }
+        // If after 'e', next must be digit or sign
+        if (after_e && (json_string[*i] != 'e' && json_string[*i] != 'E')) {
+            if (!(is_number(json_string[*i]) || json_string[*i] == '-' || json_string[*i] == '+')) {
+                strcat(error_text, "CERIALIZE ERROR: Invalid exponent format in number.\n");
+                *failure = TRUE;
+                return 0.0f;
+            }
+            after_e = FALSE;
+        }
         (*i)++;
     }
 
@@ -185,19 +256,67 @@ float json_parse_number(const char* json_string, cereal_size_t length, cereal_ui
         *failure = TRUE;
         return 0.0f;
     }
-
+    // If last char was 'e' or 'E', fail (incomplete exponent)
+    if (*i > start && (json_string[*i-1] == 'e' || json_string[*i-1] == 'E')) {
+        strcat(error_text, "CERIALIZE ERROR: Incomplete exponent in number.\n");
+        *failure = TRUE;
+        return 0.0f;
+    }
     // extract number substring 
     float value = strtof(&json_string[start], NULL);
     return value;
 }
 
 bool_t json_parse_boolean(const char* json_string, cereal_uint_t* i, bool_t* failure, char* error_text) {
-    if (strncmp(&json_string[*i], "true", 4) == 0) {
-        *i += 4;
-        return TRUE;
-    } else if (strncmp(&json_string[*i], "false", 5) == 0) {
-        *i += 5;
+    // Explicitly reject '1' and '0' as booleans
+    if (json_string[*i] == '1' && (json_string[*i+1] == '\0' || is_whitespace(json_string[*i+1]) || json_string[*i+1] == ',' || json_string[*i+1] == '}' || json_string[*i+1] == ']')) {
+        strcat(error_text, "CERIALIZE ERROR: '1' is not a valid boolean value.\n");
+        *failure = TRUE;
         return FALSE;
+    }
+    if (json_string[*i] == '0' && (json_string[*i+1] == '\0' || is_whitespace(json_string[*i+1]) || json_string[*i+1] == ',' || json_string[*i+1] == '}' || json_string[*i+1] == ']')) {
+        strcat(error_text, "CERIALIZE ERROR: '0' is not a valid boolean value.\n");
+        *failure = TRUE;
+        return FALSE;
+    }
+
+    // Accept only 'true' or 'false' (case-sensitive) followed by delimiter or end
+    if (strncmp(&json_string[*i], "true", 4) == 0) {
+        // Check next char is delimiter or end
+        char next = json_string[*i + 4];
+        if (next == '\0' || next == ',' || next == '}' || next == ']' || is_whitespace(next)) {
+            *i += 4;
+            // Check for extra boolean after delimiter (e.g. "true false")
+            cereal_uint_t temp_i = *i;
+            skip_whitespace(json_string, strlen(json_string), &temp_i);
+            if (strncmp(&json_string[temp_i], "true", 4) == 0 || strncmp(&json_string[temp_i], "false", 5) == 0) {
+                strcat(error_text, "CERIALIZE ERROR: Multiple boolean values not allowed.\n");
+                *failure = TRUE;
+                return FALSE;
+            }
+            return TRUE;
+        } else {
+            strcat(error_text, "CERIALIZE ERROR: Unexpected characters after 'true'.\n");
+            *failure = TRUE;
+            return FALSE;
+        }
+    } else if (strncmp(&json_string[*i], "false", 5) == 0) {
+        char next = json_string[*i + 5];
+        if (next == '\0' || next == ',' || next == '}' || next == ']' || is_whitespace(next)) {
+            *i += 5;
+            cereal_uint_t temp_i = *i;
+            skip_whitespace(json_string, strlen(json_string), &temp_i);
+            if (strncmp(&json_string[temp_i], "true", 4) == 0 || strncmp(&json_string[temp_i], "false", 5) == 0) {
+                strcat(error_text, "CERIALIZE ERROR: Multiple boolean values not allowed.\n");
+                *failure = TRUE;
+                return FALSE;
+            }
+            return FALSE;
+        } else {
+            strcat(error_text, "CERIALIZE ERROR: Unexpected characters after 'false'.\n");
+            *failure = TRUE;
+            return FALSE;
+        }
     } else {
         strcat(error_text, "CERIALIZE ERROR: Expected 'true' or 'false'.\n");
         *failure = TRUE;
@@ -250,11 +369,13 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     cereal_size_t node_count = 0;
 
     // parse key-value pairs
+    bool_t found_closing_bracket = FALSE;
     while (*i < length) {
         skip_whitespace(json_string, length, i);
         cur = json_string[*i];
         if (json_string[*i] == LEX_CLOSE_BRACKET) {
             (*i)++; // move past '}'
+            found_closing_bracket = TRUE;
             break; // end of object
         }
 
@@ -308,10 +429,12 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         }
         if (json_string[*i] == LEX_CLOSE_BRACKET) {
             (*i)++; // move past '}'
+            found_closing_bracket = TRUE;
+            break;
         }
 
         skip_whitespace(json_string, length, i);
-        
+
         if (json_string[*i] == LEX_COMMA) {
             (*i)++; // move past ','
         }
@@ -319,6 +442,13 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         skip_whitespace(json_string, length, i);
     }
 
+    // If we never found a closing bracket, this is an error
+    if (!found_closing_bracket) {
+        strcat(error_text, "CERIALIZE ERROR: Expected closing bracket '}' for JSON object.\n");
+        *failure = TRUE;
+        if (head) free(head);
+        return (json_object){0};
+    }
 
     // create the json_object
     obj.value.nodes = head; // assign the linked list of nodes
