@@ -37,7 +37,7 @@ test_summary_t run_list_tests() {
     for (size_t i = 0; i < total; ++i) {
         const list_test_case_t *tc = &list_tests[i];
         cereal_size_t size = strlen(tc->input);
-        json result = parse_json(tc->input, size);
+        json result = deserialize_json(tc->input, size);
         int pass = 1;
         char result_str[32] = "";
         char status[16] = "";
