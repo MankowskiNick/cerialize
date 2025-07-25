@@ -168,9 +168,10 @@ All parsing errors are reported via the `error_text` field in the `json` struct.
 
 ---
 
+
 ## License
 
-MIT (or specify your license)
+This project is licensed under the MIT License. You are free to use, modify, and distribute this software with attribution. See the LICENSE file for full details.
 
 ---
 
