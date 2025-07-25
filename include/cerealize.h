@@ -19,13 +19,20 @@ typedef enum json_type {
     JSON_NUMBER,
     JSON_BOOL,
     JSON_NULL,
+    JSON_LIST
 } json_type;
+
+typedef struct json_list {
+    cereal_size_t count;
+    struct json_object* items; // array of json_object
+} json_list;
 
 typedef union json_value {
         char* string;
         float number;
         bool_t boolean;
         bool_t is_null;
+        json_list list; // pointer to json_list
         struct json_node* nodes;
         cereal_size_t node_count;
 } json_value;
@@ -310,8 +317,15 @@ bool_t json_parse_boolean(const char* json_string, cereal_uint_t* i, bool_t* fai
 
 json_object parse_json_object(const char* json_string, cereal_size_t length, cereal_uint_t* i, char* error_text, bool_t* failure);
 
-json_object* json_parse_list(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
+json_list json_parse_list(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
     skip_whitespace(json_string, length, i);
+
+    if (json_string[*i] != LEX_OPEN_SQUARE) {
+        strcat(error_text, "CERIALIZE ERROR: Expected opening square '[' for JSON list.\n");
+        *failure = TRUE;
+        return (json_list){0, NULL}; // return empty list on error
+    }
+    (*i)++; // move past '['
 
     // count number of elements in the list
     cereal_size_t count = 0;
@@ -330,27 +344,24 @@ json_object* json_parse_list(const char* json_string, cereal_size_t length, cere
         json_object value = parse_json_object(json_string, length, i, error_text, failure);
         if (*failure) {
             strcat(error_text, "CERIALIZE ERROR: Failed to parse value in JSON list.\n");
-            return NULL; // return NULL on error
+            return (json_list){0, NULL};
         }
         // add value to list
         list = realloc(list, sizeof(json_object) * (count + 1));
         if (list == NULL) {
             strcat(error_text, "CERIALIZE ERROR: Failed to allocate memory for JSON list.\n");
             *failure = TRUE;
-            return NULL; // return NULL on error
+            return (json_list){0, NULL};
         }
-        list[count] = value; // copy the value
-
-        (*i)++;
-
+        list[count] = value;
         count++;
 
         skip_whitespace(json_string, length, i);
-
+    
         if (json_string[*i] != LEX_COMMA && json_string[*i] != LEX_CLOSE_SQUARE && *i != length) {
             strcat(error_text, "CERIALIZE ERROR: Expected ',' or ']' after value in JSON list.\n");
             *failure = TRUE;
-            return NULL; // return NULL on error
+            return (json_list){0, NULL};
         }
 
         if (json_string[*i] == LEX_COMMA) {
@@ -370,10 +381,14 @@ json_object* json_parse_list(const char* json_string, cereal_size_t length, cere
         strcat(error_text, "CERIALIZE ERROR: Expected closing square ']' for JSON list.\n");
         *failure = TRUE;
         if (list) free(list);
-        return NULL; // return NULL on error
+        return (json_list){0, NULL}; // return NULL on error
     }
 
-    return list;
+    json_list result = {
+        .count = count,
+        .items = list // assign the array of json_object
+    };
+    return result;
 }
 
 json_object parse_json_object(const char* json_string, cereal_size_t length, cereal_uint_t* i, char* error_text, bool_t* failure) {
@@ -408,7 +423,9 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     }
     
     if (cur == LEX_OPEN_SQUARE) {
-        json_parse_list(json_string, length, i, failure, error_text);
+        obj.value.list = json_parse_list(json_string, length, i, failure, error_text);
+        obj.type = JSON_LIST;
+        return obj;
     }
 
     // parse build object

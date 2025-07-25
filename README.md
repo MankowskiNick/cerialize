@@ -5,7 +5,7 @@
 ## Features
 
 - **Single-header library**: Just include `cerealize.h` in your project.
-- **Supports core JSON types**: Object, String, Number, Boolean, Null.
+- **Supports core JSON types**: Object, String, Number, Boolean, Null, List (Array).
 - **Strict error handling**: Detailed error messages for invalid input.
 - **Test suite included**: Comprehensive tests for all supported types.
 
@@ -38,20 +38,21 @@ if (result.failure) {
 
 ## Data Types
 
+
 ### Main Types
 
 - **json_type**: Enum for type discrimination.
-  - `JSON_OBJECT`, `JSON_STRING`, `JSON_NUMBER`, `JSON_BOOL`, `JSON_NULL`
+  - `JSON_OBJECT`, `JSON_STRING`, `JSON_NUMBER`, `JSON_BOOL`, `JSON_NULL`, `JSON_LIST`
 - **json_value**: Union holding the actual value.
   - `string`: `char*`
   - `number`: `float`
   - `boolean`: `bool_t` (char, TRUE/FALSE)
   - `is_null`: `bool_t`
-  - `nodes`: Array of `json_node` (for objects)
-  - `node_count`: Number of nodes (for objects)
-- **json_node**: Represents a key-value pair in an object.
-  - `key`: `char*`
-  - `value`: `json_value`
+  - `nodes`: Array of `json_node` (for objects and lists)
+  - `node_count`: Number of nodes (for objects and lists)
+- **json_node**: Represents a key-value pair in an object, or an element in a list.
+  - For objects: `key` is set, `value` is the value.
+  - For lists: `key` is NULL, `value` is the element value.
 - **json_object**: Main parsed value.
   - `type`: `json_type`
   - `value`: `json_value`
@@ -68,6 +69,18 @@ if (result.root.type == JSON_OBJECT) {
         json_node node = result.root.value.nodes[i];
         printf("Key: %s\n", node.key);
         // Check node.value type and access accordingly
+    }
+}
+```
+
+### Example: Traversing a List
+
+```c
+if (result.root.type == JSON_LIST) {
+    for (cereal_size_t i = 0; i < result.root.value.node_count; ++i) {
+        json_node node = result.root.value.nodes[i];
+        // node.key will be NULL
+        // node.value holds the element value
     }
 }
 ```
@@ -125,6 +138,7 @@ gcc -std=c99 -Wall -Wextra -Iinclude -Itest/helpers -Itest/cases -o build/tests 
 - **Boolean**: Only accepts `true` or `false` (case-sensitive). `1` and `0` are rejected.
 - **Null**: Only accepts `null` (case-sensitive).
 - **Object**: Key-value pairs, keys must be strings.
+- **List (Array)**: Elements separated by commas, supports mixed types. Trailing commas are allowed and ignored. Empty lists are supported.
 
 ---
 
