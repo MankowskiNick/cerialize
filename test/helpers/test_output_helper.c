@@ -79,7 +79,24 @@ void print_test_table(const char *title, const char *headers[], int num_headers,
 
     for (size_t i = 0; i < num_rows; ++i) {
         printf("%s|%s %s%-3zu%s ", CYAN, RESET, BOLD_BLUE, i+1, RESET);
-        printf("%s|%s %-*s ", CYAN, RESET, col_widths[0], rows[i].input_display);
+        // Truncate input_display if needed
+        char input_buf[128];
+        strncpy(input_buf, rows[i].input_display, sizeof(input_buf)-1);
+        input_buf[sizeof(input_buf)-1] = '\0';
+        int input_len = (int)strlen(input_buf);
+        if (input_len > col_widths[0]) {
+            if (col_widths[0] > 3) {
+                strncpy(input_buf, rows[i].input_display, col_widths[0]-3);
+                input_buf[col_widths[0]-3] = '.';
+                input_buf[col_widths[0]-2] = '.';
+                input_buf[col_widths[0]-1] = '.';
+                input_buf[col_widths[0]] = '\0';
+            } else {
+                strncpy(input_buf, rows[i].input_display, col_widths[0]);
+                input_buf[col_widths[0]] = '\0';
+            }
+        }
+        printf("%s|%s %-*s ", CYAN, RESET, col_widths[0], input_buf);
         if (num_headers == 2) {
             printf("%s|%s %-*s ", CYAN, RESET, col_widths[1], rows[i].result);
         } else if (num_headers == 3) {
@@ -108,6 +125,19 @@ void print_test_table(const char *title, const char *headers[], int num_headers,
             char expected_buf[64];
             strncpy(expected_buf, rows[i].expected, sizeof(expected_buf)-1);
             expected_buf[sizeof(expected_buf)-1] = '\0';
+            int exp_len = (int)strlen(expected_buf);
+            if (exp_len > col_widths[1]) {
+                if (col_widths[1] > 3) {
+                    strncpy(expected_buf, rows[i].expected, col_widths[1]-3);
+                    expected_buf[col_widths[1]-3] = '.';
+                    expected_buf[col_widths[1]-2] = '.';
+                    expected_buf[col_widths[1]-1] = '.';
+                    expected_buf[col_widths[1]] = '\0';
+                } else {
+                    strncpy(expected_buf, rows[i].expected, col_widths[1]);
+                    expected_buf[col_widths[1]] = '\0';
+                }
+            }
             printf("%s|%s %-*s ", CYAN, RESET, col_widths[1], expected_buf);
 
             char result_buf[64];

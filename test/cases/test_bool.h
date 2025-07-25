@@ -12,7 +12,7 @@ typedef struct {
 
 int run_bool_test(const bool_test_case_t* tc) {
     cereal_size_t size = strlen(tc->input);
-    json result = parse_json(tc->input, size);
+    json result = deserialize_json(tc->input, size);
     printf("    Test: '%s'\n", tc->input);
     int pass = 1;
     if (tc->should_fail) {
@@ -71,7 +71,7 @@ test_summary_t run_bool_tests() {
     for (size_t i = 0; i < total; ++i) {
         const bool_test_case_t *tc = &bool_tests[i];
         cereal_size_t size = strlen(tc->input);
-        json result = parse_json(tc->input, size);
+        json result = deserialize_json(tc->input, size);
         int pass = 1;
         char result_str[32] = "";
         char status[16] = "";

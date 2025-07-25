@@ -39,7 +39,7 @@ test_summary_t run_object_tests() {
     for (size_t i = 0; i < total; ++i) {
         const object_test_case_t *tc = &object_tests[i];
         cereal_size_t size = strlen(tc->input);
-        json result = parse_json(tc->input, size);
+        json result = deserialize_json(tc->input, size);
         int pass = 1;
         char result_str[32] = "";
         char status[16] = "";
@@ -57,7 +57,7 @@ test_summary_t run_object_tests() {
                 strcpy(result_str, "Error");
             }
         } else {
-            if (result.failure || result.root.type != JSON_OBJECT || result.root.value.nodes == NULL) {
+            if (result.failure || result.root.type != JSON_OBJECT || result.root.value.object.nodes == NULL) {
                 strcpy(status, "FAIL");
                 color = RED;
                 pass = 0;

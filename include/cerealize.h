@@ -5,13 +5,16 @@
 #include <stdio.h>
 #include <string.h>
 
+
 typedef unsigned int cereal_size_t;
 typedef unsigned int cereal_uint_t;
 
 #define TRUE 1
 #define FALSE 0
-typedef char bool_t;
 
+#define JSON_MAX_STRING_LENGTH 1024
+
+typedef char bool_t;
 
 typedef enum json_type {
     JSON_OBJECT,
@@ -27,21 +30,19 @@ typedef struct json_list {
     struct json_object* items; // array of json_object
 } json_list;
 
+typedef struct json_body {
+    struct json_node* nodes;
+    cereal_size_t node_count;
+} json_body;
+
 typedef union json_value {
         char* string;
         float number;
         bool_t boolean;
         bool_t is_null;
         json_list list; // pointer to json_list
-        struct json_node* nodes;
-        cereal_size_t node_count;
+        json_body object;
 } json_value;
-
-typedef struct json_node {
-    char* key;
-    json_value value;
-} json_node;
-
 
 // need to define json_object that tracks the type, and then moodify the lexer to return this
 typedef struct json_object {
@@ -49,9 +50,10 @@ typedef struct json_object {
     json_value value;
 } json_object;
 
-
-
-#define JSON_MAX_ERROR_LENGTH 512
+typedef struct json_node {
+    char* key;
+    json_object value;
+} json_node;
 
 typedef struct {
     json_object root;
@@ -59,6 +61,11 @@ typedef struct {
     cereal_size_t error_length;
     bool_t failure;
 } json;
+
+char* serialize_json(const json* j);
+json deserialize_json(const char* json_string, cereal_size_t length);
+
+#define JSON_MAX_ERROR_LENGTH 512
 
 // lexer
 enum lex_type {
@@ -480,7 +487,7 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         // create new node
         json_node* new_node = (json_node*)malloc(sizeof(json_node));
         new_node->key = key;
-        new_node->value = value.value; // copy the value
+        new_node->value = value; // copy the value
 
         node_count++;
         head = realloc(head, sizeof(json_node) * node_count);
@@ -524,15 +531,15 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     }
 
     // create the json_object
-    obj.value.nodes = head; // assign the linked list of nodes
-    obj.value.node_count = node_count; // store the number of nodes
+    obj.value.object.nodes = head; // assign the linked list of nodes
+    obj.value.object.node_count = node_count; // store the number of nodes
     obj.type = JSON_OBJECT;
 
     return obj;
 }
 
 // parse json
-json parse_json(const char* json_string, cereal_size_t length) {
+json deserialize_json(const char* json_string, cereal_size_t length) {
 
     bool_t failure = FALSE;
     char* error_text = malloc(JSON_MAX_ERROR_LENGTH);
@@ -557,6 +564,118 @@ json parse_json(const char* json_string, cereal_size_t length) {
     };
 
     return result;
+}
+
+
+char* serialize_string(const char* str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+    char* result = (char*)malloc(len + 1);
+    if (!result) return NULL;
+    strcpy(result, str);
+    return result;
+}
+
+char* serialize_null() {
+    char* result = (char*)malloc(5);
+    if (!result) return NULL;
+    strcpy(result, "null");
+    return result;
+}
+
+char* serialize_number(float number) { 
+    char* result = malloc(32);
+    if (!result) return NULL; // handle memory allocation failure
+    snprintf(result, 32, "%f", number);
+    return result;
+}
+
+char* serialize_bool(bool_t value) {
+    const char* src = value ? "true" : "false";
+    char* result = (char*)malloc(strlen(src) + 1);
+    if (!result) return NULL;
+    strcpy(result, src);
+    return result;
+}
+
+char* serialize_list(json_list list) { 
+    char* result = malloc(JSON_MAX_STRING_LENGTH);
+    if (!result) return NULL; // handle memory allocation failure
+    strcpy(result, "[");
+    for (cereal_uint_t i = 0; i < list.count; i++) {
+        // serialize each item in the list
+        json item = {
+            .root = list.items[i],
+            .failure = 0,
+            .error_text = NULL
+        };
+        char* item_str = serialize_json(&item);
+        if (item_str) {
+            strcat(result, item_str);
+            free(item_str);
+        }
+        if (i < list.count - 1) {
+            strcat(result, ",");
+        }
+    }
+    strcat(result, "]");
+    return result;
+}
+
+char* serialize_object(const json_object* obj) { 
+    char* result = malloc(JSON_MAX_STRING_LENGTH);
+    if (!result) return NULL; // handle memory allocation failure
+    // Defensive: handle empty or malformed objects
+    if (obj->value.object.node_count == 0) {
+        strcpy(result, "{}");
+        return result;
+    }
+
+    strcpy(result, "{");
+    for (cereal_size_t i = 0; i < obj->value.object.node_count; i++) {
+        json_node node = obj->value.object.nodes[i];
+        char* key_str = serialize_string(node.key);
+        json value = {
+            .root = { .type = node.value.type, .value = node.value.value },
+            .failure = 0,
+            .error_text = NULL
+        };
+        char* value_str = serialize_json(&value);
+        if (key_str && value_str) {
+            strcat(result, key_str);
+            strcat(result, ":");
+            strcat(result, value_str);
+            free(key_str);
+            free(value_str);
+        }
+        if (i < obj->value.object.node_count - 1) {
+            strcat(result, ",");
+        }
+    }
+    strcat(result, "}");
+    return result;
+}
+
+char* serialize_json(const json* j) { 
+    if (!j) return NULL;
+
+    json_object root = j->root;
+    switch (root.type) {
+        case JSON_STRING:
+            return serialize_string(root.value.string);
+        case JSON_NUMBER:
+            return serialize_number(root.value.number);
+        case JSON_BOOL:
+            return serialize_bool(root.value.boolean);
+        case JSON_NULL:
+            return serialize_null();
+        case JSON_LIST:
+            return serialize_list(root.value.list);
+        case JSON_OBJECT:
+            return serialize_object(&root);
+        default:
+            return NULL;
+    }
 }
 
 #endif
