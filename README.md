@@ -1,5 +1,7 @@
 # cerialize
 
+![Build Status](https://github.com/MankowskiNick/cerialize/actions/workflows/test.yml/badge.svg?branch=main)
+
 **cerialize** is a lightweight, single-header JSON deserializer written in C. It provides a simple API for parsing JSON strings into C data structures, with robust error handling and support for core JSON types.
 
 ## Features
