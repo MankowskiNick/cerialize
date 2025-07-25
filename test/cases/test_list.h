@@ -59,8 +59,20 @@ test_summary_t run_list_tests() {
                 pass = 0;
                 strcpy(result_str, "Error");
             } else {
-                snprintf(result_str, sizeof(result_str), "%u", result.root.value.object.node_count);
-                if ((int)result.root.value.object.node_count != tc->expected_count) {
+                // Check type and use correct count field
+                if (result.root.type == JSON_LIST) {
+                    snprintf(result_str, sizeof(result_str), "%u", result.root.value.list.count);
+                    if ((int)result.root.value.list.count != tc->expected_count) {
+                        pass = 0;
+                    }
+                } else if (result.root.type == JSON_OBJECT) {
+                    snprintf(result_str, sizeof(result_str), "%u", result.root.value.object.node_count);
+                    if ((int)result.root.value.object.node_count != tc->expected_count) {
+                        pass = 0;
+                    }
+                } else {
+                    // Not a list or object, fail
+                    strcpy(result_str, "WrongType");
                     pass = 0;
                 }
             }
