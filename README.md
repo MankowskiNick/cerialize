@@ -89,13 +89,18 @@ if (result.root.type == JSON_LIST) {
 
 ## Compilation & Running Tests
 
-### Build
 
+### Build (CMake)
 
-Use the provided build script:
+Use CMake to build the test suite:
 
 ```bash
-./build.sh
+rm -rf build
+mkdir -p build
+cd build
+cmake ..
+make
+cd ..
 ```
 
 This will compile the test suite and place the binary in `build/tests`.
@@ -114,7 +119,7 @@ Or, run the test binary directly after building:
 ./build/tests
 ```
 
-#### Manual Compilation
+#### Manual Compilation (Optional)
 
 You can also compile manually:
 
