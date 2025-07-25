@@ -46,13 +46,9 @@ test_summary_t run_list_tests() {
         char expected_str[21];
         if (tc->should_fail) {
             if (!result.failure) {
-                strcpy(status, "FAIL");
-                color = RED;
                 pass = 0;
                 strcpy(result_str, "Parsed");
             } else {
-                strcpy(status, "PASS");
-                color = GREEN;
                 strcpy(result_str, "Error");
                 if (tc->expected_error && !strstr(result.error_text, tc->expected_error)) {
                     pass = 0;
@@ -60,18 +56,22 @@ test_summary_t run_list_tests() {
             }
         } else {
             if (result.failure) {
-                strcpy(status, "FAIL");
-                color = RED;
                 pass = 0;
                 strcpy(result_str, "Error");
             } else {
-                strcpy(status, "PASS");
-                color = GREEN;
-                snprintf(result_str, sizeof(result_str), "%u", result.root.value.node_count);
-                if ((int)result.root.value.node_count != tc->expected_count) {
+                snprintf(result_str, sizeof(result_str), "%u", result.root.value.object.node_count);
+                if ((int)result.root.value.object.node_count != tc->expected_count) {
                     pass = 0;
                 }
             }
+        }
+        // Set status and color after pass is determined
+        if (pass) {
+            strcpy(status, "PASS");
+            color = GREEN;
+        } else {
+            strcpy(status, "FAIL");
+            color = RED;
         }
         format_input_display(tc->input, input_display, sizeof(input_display));
         if (!tc->should_fail)

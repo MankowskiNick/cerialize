@@ -57,7 +57,7 @@ test_summary_t run_object_tests() {
                 strcpy(result_str, "Error");
             }
         } else {
-            if (result.failure || result.root.type != JSON_OBJECT || result.root.value.nodes == NULL) {
+            if (result.failure || result.root.type != JSON_OBJECT || result.root.value.object.nodes == NULL) {
                 strcpy(status, "FAIL");
                 color = RED;
                 pass = 0;
