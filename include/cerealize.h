@@ -53,28 +53,13 @@ typedef struct {
     bool_t failure;
 } json;
 
-// {
-//     "example": {
-//         "name": "example",
-//         "value": 42,
-//         "nested": {
-//             "key": "value"
-//         }
-//     }
-// }
-// {"example":{"name":"example","value": 42,"nested": {"key": "value"}}}
-
-// json parse_json(const char* json_string);
-
-// implementation
-
 // lexer
 enum lex_type {
     LEX_QUOTE = '\'',
     LEX_COMMA = ',',
     LEX_PERIOD = '.',
-    LEX_OPEN_BRACKET = '{',
-    LEX_CLOSE_BRACKET = '}',
+    LEX_OPEN_BRACE = '{',
+    LEX_CLOSE_BRACE = '}',
     LEX_OPEN_SQUARE = '[',
     LEX_CLOSE_SQUARE = ']',
     LEX_COLON = ':',
@@ -323,6 +308,74 @@ bool_t json_parse_boolean(const char* json_string, cereal_uint_t* i, bool_t* fai
     }
 }
 
+json_object parse_json_object(const char* json_string, cereal_size_t length, cereal_uint_t* i, char* error_text, bool_t* failure);
+
+json_object* json_parse_list(const char* json_string, cereal_size_t length, cereal_uint_t* i, bool_t* failure, char* error_text) {
+    skip_whitespace(json_string, length, i);
+
+    // count number of elements in the list
+    cereal_size_t count = 0;
+    bool_t found_closing_square = FALSE;
+    json_object* list = NULL;
+    while (*i < length) {
+        skip_whitespace(json_string, length, i);
+        char cur = json_string[*i];
+        if (cur == LEX_CLOSE_SQUARE) {
+            (*i)++; // move past ']'
+            found_closing_square = TRUE;
+            break; // end of list
+        }
+
+        // json_object* value = malloc(sizeof(json_object));
+        json_object value = parse_json_object(json_string, length, i, error_text, failure);
+        if (*failure) {
+            strcat(error_text, "CERIALIZE ERROR: Failed to parse value in JSON list.\n");
+            return NULL; // return NULL on error
+        }
+        // add value to list
+        list = realloc(list, sizeof(json_object) * (count + 1));
+        if (list == NULL) {
+            strcat(error_text, "CERIALIZE ERROR: Failed to allocate memory for JSON list.\n");
+            *failure = TRUE;
+            return NULL; // return NULL on error
+        }
+        list[count] = value; // copy the value
+
+        (*i)++;
+
+        count++;
+
+        skip_whitespace(json_string, length, i);
+
+        if (json_string[*i] != LEX_COMMA && json_string[*i] != LEX_CLOSE_SQUARE && *i != length) {
+            strcat(error_text, "CERIALIZE ERROR: Expected ',' or ']' after value in JSON list.\n");
+            *failure = TRUE;
+            return NULL; // return NULL on error
+        }
+
+        if (json_string[*i] == LEX_COMMA) {
+            (*i)++; // move past ','
+        }
+
+        if (json_string[*i] == LEX_CLOSE_SQUARE) {
+            found_closing_square = TRUE;
+            break;
+        }
+
+        skip_whitespace(json_string, length, i);
+    }
+
+    // If we never found a closing square, this is an error
+    if (!found_closing_square) {
+        strcat(error_text, "CERIALIZE ERROR: Expected closing square ']' for JSON list.\n");
+        *failure = TRUE;
+        if (list) free(list);
+        return NULL; // return NULL on error
+    }
+
+    return list;
+}
+
 json_object parse_json_object(const char* json_string, cereal_size_t length, cereal_uint_t* i, char* error_text, bool_t* failure) {
     skip_whitespace(json_string, length, i);
 
@@ -354,9 +407,13 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         return obj;
     }
     
+    if (cur == LEX_OPEN_SQUARE) {
+        json_parse_list(json_string, length, i, failure, error_text);
+    }
+
     // parse build object
-    if (cur != LEX_OPEN_BRACKET) {
-        strcat(error_text, "CERIALIZE ERROR: Expected opening bracket '{' for JSON object.\n");
+    if (cur != LEX_OPEN_BRACE) {
+        strcat(error_text, "CERIALIZE ERROR: Expected opening brace '{' for JSON object.\n");
         *failure = TRUE;
         return (json_object){0}; // return empty value on error
     }
@@ -368,13 +425,13 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
     cereal_size_t node_count = 0;
 
     // parse key-value pairs
-    bool_t found_closing_bracket = FALSE;
+    bool_t found_closing_brace = FALSE;
     while (*i < length) {
         skip_whitespace(json_string, length, i);
         cur = json_string[*i];
-        if (json_string[*i] == LEX_CLOSE_BRACKET) {
+        if (json_string[*i] == LEX_CLOSE_BRACE) {
             (*i)++; // move past '}'
-            found_closing_bracket = TRUE;
+            found_closing_brace = TRUE;
             break; // end of object
         }
 
@@ -420,15 +477,15 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         free(new_node);
 
         skip_whitespace(json_string, length, i);
-        if (json_string[*i] != LEX_COMMA && json_string[*i] != LEX_CLOSE_BRACKET && *i != length) {
+        if (json_string[*i] != LEX_COMMA && json_string[*i] != LEX_CLOSE_BRACE && *i != length) {
             strcat(error_text, "CERIALIZE ERROR: Expected ',' or '}' after key-value pair in JSON object.\n");
             *failure = TRUE;
             free(key);
             return (json_object){0}; // return empty value on error
         }
-        if (json_string[*i] == LEX_CLOSE_BRACKET) {
+        if (json_string[*i] == LEX_CLOSE_BRACE) {
             (*i)++; // move past '}'
-            found_closing_bracket = TRUE;
+            found_closing_brace = TRUE;
             break;
         }
 
@@ -441,9 +498,9 @@ json_object parse_json_object(const char* json_string, cereal_size_t length, cer
         skip_whitespace(json_string, length, i);
     }
 
-    // If we never found a closing bracket, this is an error
-    if (!found_closing_bracket) {
-        strcat(error_text, "CERIALIZE ERROR: Expected closing bracket '}' for JSON object.\n");
+    // If we never found a closing brace, this is an error
+    if (!found_closing_brace) {
+        strcat(error_text, "CERIALIZE ERROR: Expected closing brace '}' for JSON object.\n");
         *failure = TRUE;
         if (head) free(head);
         return (json_object){0};
