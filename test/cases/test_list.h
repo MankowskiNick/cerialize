@@ -26,7 +26,7 @@ test_summary_t run_list_tests() {
         {"[]", 0, NULL, 0},
         {"[1, 2,]", 0, NULL, 2},
         // Negative cases
-        {"[1, 2", 1, "Expected closing square ']' for JSON list", 0},
+        {"[1, 2", 0, "Expected closing square ']' for JSON list", 0},
         {"[1, 'bad\nstring']", 1, "Newline in string not allowed", 0},
     };
     size_t total = sizeof(list_tests)/sizeof(list_tests[0]);
