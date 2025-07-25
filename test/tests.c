@@ -58,6 +58,7 @@ int main() {
         printf("%sAll tests passed!%s\n", GREEN, RESET);
     } else {
         printf("%sSome tests failed.%s\n", RED, RESET);
+        return 1;
     }
     printf("All tests completed.\n");
     return 0;
