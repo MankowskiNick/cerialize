@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include "cerealize.h"
@@ -10,54 +9,6 @@ typedef struct {
     int should_fail; // 1 for negative, 0 for positive
     const char* expected_error; // Optional: expected error message/type
 } object_test_case_t;
-
-int run_object_test(const object_test_case_t* tc, size_t test_num) {
-    cereal_size_t size = strlen(tc->input);
-    json result = parse_json(tc->input, size);
-    printf("  Test %zu:\n", test_num + 1);
-    // Print input, indenting each line
-    const char* p = tc->input;
-    printf("    Input:\n");
-    while (*p) {
-        printf("      ");
-        while (*p && *p != '\n') {
-            putchar(*p);
-            ++p;
-        }
-        putchar('\n');
-        if (*p == '\n') ++p;
-    }
-    int pass = 1;
-    if (tc->should_fail) {
-        if (!result.failure) {
-            printf("    Result: FAIL (Should fail to parse, but succeeded)\n");
-            pass = 0;
-        } else {
-            printf("    Result: PASS (Correctly failed to parse)\n");
-            if (tc->expected_error) {
-                printf("      Expected error: %s\n", tc->expected_error);
-            }
-        }
-        return pass;
-    }
-    // Positive test logic
-    if (result.failure) {
-        printf("    Result: FAIL (Should parse object without failure)\n");
-        pass = 0;
-    }
-    if (result.root.type != JSON_OBJECT) {
-        printf("    Result: FAIL (Root type should be JSON_OBJECT, got %d)\n", result.root.type);
-        pass = 0;
-    }
-    if (result.root.value.nodes == NULL) {
-        printf("    Result: FAIL (Root nodes should not be NULL)\n");
-        pass = 0;
-    }
-    if (pass) {
-        printf("    Result: PASS\n");
-    }
-    return pass;
-}
 
 test_summary_t run_object_tests() {
     object_test_case_t object_tests[] = {
@@ -80,16 +31,11 @@ test_summary_t run_object_tests() {
     };
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
-    // const char *YELLOW = "\033[1;33m";
     const char *RESET = "\033[0m";
-    // ...existing code...
-
     size_t total = sizeof(object_tests)/sizeof(object_tests[0]);
     int negative_passed = 0, negative_failed = 0;
     int positive_passed = 0, positive_failed = 0;
-    printf("\n[Object Tests]\n");
-    printf("| %-3s | %-40s | %-10s | %-10s |\n", "#", "Input", "Result", "Status");
-    printf("|-----|------------------------------------------|------------|------------|\n");
+    test_row_t rows[sizeof(object_tests)/sizeof(object_tests[0])];
     for (size_t i = 0; i < total; ++i) {
         const object_test_case_t *tc = &object_tests[i];
         cereal_size_t size = strlen(tc->input);
@@ -99,7 +45,6 @@ test_summary_t run_object_tests() {
         char status[16] = "";
         const char *color = GREEN;
         char input_display[41];
-        // Use test output helper for formatting and printing
         if (tc->should_fail) {
             if (!result.failure) {
                 strcpy(status, "FAIL");
@@ -129,14 +74,21 @@ test_summary_t run_object_tests() {
             }
         }
         format_input_display(tc->input, input_display, sizeof(input_display));
-        print_test_row(i+1, input_display, result_str, status, color, RESET, 40, 10, 10);
+        strcpy(rows[i].input_display, input_display);
+        strcpy(rows[i].expected, "-"); // Not used for object tests
+        strcpy(rows[i].result, result_str);
+        strcpy(rows[i].status, status);
+        rows[i].color = color;
+        rows[i].reset = RESET;
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {
             if (pass) ++positive_passed; else ++positive_failed;
         }
     }
-    printf("|-----|------------------------------------------|------------|------------|\n");
+    const char *headers[] = {"Input", "Result", "Status"};
+    int col_widths[] = {40, 10, 10};
+    print_test_table("Object Tests", headers, 3, col_widths, rows, total);
     printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
     printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
     printf("  Total: %zu\n", total);

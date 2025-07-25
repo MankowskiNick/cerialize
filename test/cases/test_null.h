@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include "cerealize.h"
@@ -11,48 +10,10 @@ typedef struct {
     const char* expected_error; // Optional: expected error message/type
 } null_test_case_t;
 
-int run_null_test(const null_test_case_t* tc) {
-    cereal_size_t size = strlen(tc->input);
-    json result = parse_json(tc->input, size);
-    printf("    Test: '%s'\n", tc->input);
-    int pass = 1;
-    if (tc->should_fail) {
-        if (!result.failure) {
-            printf("  FAIL: Should fail to parse, but succeeded\n");
-            pass = 0;
-        } else {
-            printf("  PASS: Correctly failed to parse\n");
-            if (tc->expected_error) {
-                printf("    Expected error: %s\n", tc->expected_error);
-            }
-        }
-        return pass;
-    }
-    // Positive test logic
-    if (result.failure) {
-        printf("  FAIL: Should parse null without failure\n");
-        pass = 0;
-    }
-    if (result.root.type != JSON_NULL) {
-        printf("  FAIL: Root type should be JSON_NULL (got %d)\n", result.root.type);
-        pass = 0;
-    }
-    if (!result.root.value.is_null) {
-        printf("  FAIL: Root is_null should be true\n");
-        pass = 0;
-    }
-    if (pass) {
-        printf("  PASS\n");
-    }
-    return pass;
-}
-
 test_summary_t run_null_tests() {
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
     const char *RESET = "\033[0m";
-    // ...existing code...
-
     null_test_case_t null_tests[] = {
         // Positive cases
         {"null", 0, NULL},
@@ -68,9 +29,7 @@ test_summary_t run_null_tests() {
     size_t total = sizeof(null_tests)/sizeof(null_tests[0]);
     int negative_passed = 0, negative_failed = 0;
     int positive_passed = 0, positive_failed = 0;
-    printf("\n[Null Tests]\n");
-    printf("| %-3s | %-20s | %-20s | %-10s | %-10s |\n", "#", "Input", "Expected", "Result", "Status");
-    printf("|-----|----------------------|----------------------|------------|------------|\n");
+    test_row_t rows[sizeof(null_tests)/sizeof(null_tests[0])];
     for (size_t i = 0; i < total; ++i) {
         const null_test_case_t *tc = &null_tests[i];
         cereal_size_t size = strlen(tc->input);
@@ -81,7 +40,6 @@ test_summary_t run_null_tests() {
         const char *color = GREEN;
         char input_display[21];
         char expected_str[21];
-        // Use test output helper for formatting and printing
         if (tc->should_fail) {
             if (!result.failure) {
                 strcpy(status, "FAIL");
@@ -115,14 +73,21 @@ test_summary_t run_null_tests() {
             strcpy(expected_str, "null");
         else
             strcpy(expected_str, "-");
-        print_test_row(i+1, input_display, expected_str, result_str, color, RESET, 20, 20, 10);
+        strcpy(rows[i].input_display, input_display);
+        strcpy(rows[i].expected, expected_str);
+        strcpy(rows[i].result, result_str);
+        strcpy(rows[i].status, status);
+        rows[i].color = color;
+        rows[i].reset = RESET;
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {
             if (pass) ++positive_passed; else ++positive_failed;
         }
     }
-    printf("|-----|----------------------|----------------------|------------|------------|\n");
+    const char *headers[] = {"Input", "Expected", "Result", "Status"};
+    int col_widths[] = {20, 20, 10, 10};
+    print_test_table("Null Tests", headers, 4, col_widths, rows, total);
     printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
     printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
     printf("  Total: %zu\n", total);

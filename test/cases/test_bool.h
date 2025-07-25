@@ -67,9 +67,7 @@ test_summary_t run_bool_tests() {
     size_t total = sizeof(bool_tests)/sizeof(bool_tests[0]);
     int negative_passed = 0, negative_failed = 0;
     int positive_passed = 0, positive_failed = 0;
-    printf("\n[Bool Tests]\n");
-    printf("| %-3s | %-20s | %-20s | %-10s | %-10s |\n", "#", "Input", "Expected", "Result", "Status");
-    printf("|-----|----------------------|----------------------|------------|------------|\n");
+    test_row_t rows[sizeof(bool_tests)/sizeof(bool_tests[0])];
     for (size_t i = 0; i < total; ++i) {
         const bool_test_case_t *tc = &bool_tests[i];
         cereal_size_t size = strlen(tc->input);
@@ -101,11 +99,11 @@ test_summary_t run_bool_tests() {
                 strcpy(status, "FAIL");
                 color = RED;
                 pass = 0;
-                snprintf(result_str, sizeof(result_str), "%d", result.root.value.boolean);
+                snprintf(result_str, sizeof(result_str), "%s", result.root.value.boolean ? "true" : "false");
             } else {
                 strcpy(status, "PASS");
                 color = GREEN;
-                snprintf(result_str, sizeof(result_str), "%d", result.root.value.boolean);
+                snprintf(result_str, sizeof(result_str), "%s", result.root.value.boolean ? "true" : "false");
             }
         }
         format_input_display(tc->input, input_display, sizeof(input_display));
@@ -113,14 +111,21 @@ test_summary_t run_bool_tests() {
             snprintf(expected_str, sizeof(expected_str), "%s", tc->expected ? "true" : "false");
         else
             strcpy(expected_str, "-");
-        print_test_row(i+1, input_display, expected_str, result_str, color, RESET, 20, 20, 10);
+        strcpy(rows[i].input_display, input_display);
+        strcpy(rows[i].expected, expected_str);
+        strcpy(rows[i].result, result_str);
+        strcpy(rows[i].status, status);
+        rows[i].color = color;
+        rows[i].reset = RESET;
         if (tc->should_fail) {
             if (pass) ++negative_passed; else ++negative_failed;
         } else {
             if (pass) ++positive_passed; else ++positive_failed;
         }
     }
-    printf("|-----|----------------------|----------------------|------------|------------|\n");
+    const char *headers[] = {"Input", "Expected", "Result", "Status"};
+    int col_widths[] = {20, 20, 10, 10};
+    print_test_table("Bool Tests", headers, 4, col_widths, rows, total);
     printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
     printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
     printf("  Total: %zu\n", total);
