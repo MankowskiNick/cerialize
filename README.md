@@ -1,8 +1,8 @@
-# cerialize
+# cerealize
 
 [![Tests](https://github.com/MankowskiNick/cerealize/actions/workflows/test.yml/badge.svg)](https://github.com/MankowskiNick/cerealize/actions/workflows/test.yml)
 
-**cerialize** is a lightweight, single-header JSON deserializer written in C. It provides a simple API for parsing JSON strings into C data structures, with robust error handling and support for core JSON types.
+**cerealize** is a lightweight, single-header JSON deserializer written in C. It provides a simple API for parsing JSON strings into C data structures, with robust error handling and support for core JSON types.
 
 ## Features
 
