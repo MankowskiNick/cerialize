@@ -1,3 +1,6 @@
+#include <stddef.h>
+
+void print_test_summary(int positive_passed, int positive_failed, int negative_passed, int negative_failed, size_t total);
 #ifndef TEST_OUTPUT_HELPER_H
 #define TEST_OUTPUT_HELPER_H
 

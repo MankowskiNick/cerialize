@@ -50,23 +50,18 @@ test_summary_t run_object_tests() {
                 strcpy(status, "FAIL");
                 color = RED;
                 pass = 0;
-                strcpy(result_str, "Parsed");
+                strcpy(result_str, "Object");
             } else {
                 strcpy(status, "PASS");
                 color = GREEN;
                 strcpy(result_str, "Error");
             }
         } else {
-            if (result.failure) {
+            if (result.failure || result.root.type != JSON_OBJECT || result.root.value.nodes == NULL) {
                 strcpy(status, "FAIL");
                 color = RED;
                 pass = 0;
                 strcpy(result_str, "Error");
-            } else if (result.root.type != JSON_OBJECT || result.root.value.nodes == NULL) {
-                strcpy(status, "FAIL");
-                color = RED;
-                pass = 0;
-                strcpy(result_str, "Type Error");
             } else {
                 strcpy(status, "PASS");
                 color = GREEN;
@@ -75,9 +70,9 @@ test_summary_t run_object_tests() {
         }
         format_input_display(tc->input, input_display, sizeof(input_display));
         strcpy(rows[i].input_display, input_display);
-        strcpy(rows[i].expected, "-"); // Not used for object tests
-        strcpy(rows[i].result, result_str);
-        strcpy(rows[i].status, status);
+        strcpy(rows[i].expected, ""); // Not used for object tests, leave empty
+        strcpy(rows[i].result, result_str); // 'Object' or 'Error'
+        strcpy(rows[i].status, status);    // 'PASS' or 'FAIL'
         rows[i].color = color;
         rows[i].reset = RESET;
         if (tc->should_fail) {
@@ -89,9 +84,7 @@ test_summary_t run_object_tests() {
     const char *headers[] = {"Input", "Result", "Status"};
     int col_widths[] = {40, 10, 10};
     print_test_table("Object Tests", headers, 3, col_widths, rows, total);
-    printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
-    printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
-    printf("  Total: %zu\n", total);
+    print_test_summary(positive_passed, positive_failed, negative_passed, negative_failed, total);
     test_summary_t summary = {positive_passed + negative_passed, positive_failed + negative_failed, total};
     return summary;
 }

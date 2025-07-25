@@ -99,9 +99,7 @@ test_summary_t run_number_tests() {
     const char *headers[] = {"Input", "Expected", "Result", "Status"};
     int col_widths[] = {20, 20, 15, 10};
     print_test_table("Number Tests", headers, 4, col_widths, rows, total);
-    printf("  Positive: %d passed, %d failed\n", positive_passed, positive_failed);
-    printf("  Negative: %d passed, %d failed\n", negative_passed, negative_failed);
-    printf("  Total: %zu\n", total);
+    print_test_summary(positive_passed, positive_failed, negative_passed, negative_failed, total);
     test_summary_t summary = {positive_passed + negative_passed, positive_failed + negative_failed, total};
     return summary;
 }
