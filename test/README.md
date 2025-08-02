@@ -1,14 +1,14 @@
 
 # Test Suite Documentation
 
-This directory contains the test suite for the cerealize project, which is focused on JSON serialization and deserialization in C. The tests verify both the parsing (deserialization) and generation (serialization) of JSON data. The suite is organized into separate files based on the type of data being tested. Below is an overview of the structure and contents of the test suite.
+This directory contains the test suite for the cerialize project, which is focused on JSON serialization and deserialization in C. The tests verify both the parsing (deserialization) and generation (serialization) of JSON data. The suite is organized into separate files based on the type of data being tested. Below is an overview of the structure and contents of the test suite.
 
 ## Project Structure
 
 The project is organized as follows:
 
-- **include/**: Contains public headers for the cerealize library.
-  - `cerealize.h`: Main header for JSON serialization/deserialization logic.
+- **include/**: Contains public headers for the cerialize library.
+  - `cerialize.h`: Main header for JSON serialization/deserialization logic.
 
 - **test/**: Contains the test suite and related files.
   - **cases/**: Individual test case files for different data types and features.
@@ -53,7 +53,7 @@ make
 
 ## Dependencies
 
-Ensure that you have the necessary development tools installed, including a C compiler (such as GCC) and any libraries required by the cerealize project. No external JSON libraries are required, as serialization and deserialization are implemented in C.
+Ensure that you have the necessary development tools installed, including a C compiler (such as GCC) and any libraries required by the cerialize project. No external JSON libraries are required, as serialization and deserialization are implemented in C.
 
 ## Contribution
 

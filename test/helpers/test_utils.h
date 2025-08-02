@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "cerealize.h"
+#include "cerialize.h"
 
 typedef struct { int passed, failed; size_t total; } test_summary_t;
 #ifndef TEST_UTILS_H
@@ -12,7 +12,7 @@ typedef struct { int passed, failed; size_t total; } test_summary_t;
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "cerealize.h"
+#include "cerialize.h"
 
 #define EPSILON 1e-5
 #define ASSERT_TRUE(condition, message) \

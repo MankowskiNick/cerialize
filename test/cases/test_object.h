@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "cerealize.h"
+#include "cerialize.h"
 #include "../helpers/test_utils.h"
 #include "../helpers/test_output_helper.h"
 
