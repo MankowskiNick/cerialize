@@ -1,12 +1,12 @@
-# cerealize
+# cerialize
 
-[![Tests](https://github.com/MankowskiNick/cerealize/actions/workflows/test.yml/badge.svg)](https://github.com/MankowskiNick/cerealize/actions/workflows/test.yml)
+[![Tests](https://github.com/MankowskiNick/cerialize/actions/workflows/test.yml/badge.svg)](https://github.com/MankowskiNick/cerialize/actions/workflows/test.yml)
 
-**cerealize** is a lightweight, single-header JSON deserializer written in C. It provides a simple API for parsing JSON strings into C data structures, with robust error handling and support for core JSON types.
+**cerialize** is a lightweight, single-header JSON deserializer written in C. It provides a simple API for parsing JSON strings into C data structures, with robust error handling and support for core JSON types.
 
 ## Features
 
-- **Single-header library**: Just include `cerealize.h` in your project.
+- **Single-header library**: Just include `cerialize.h` in your project.
 - **Supports core JSON types**: Object, String, Number, Boolean, Null, List (Array).
 - **Strict error handling**: Detailed error messages for invalid input.
 - **Test suite included**: Comprehensive tests for all supported types.
@@ -17,10 +17,10 @@
 
 ### 1. Add to Your Project
 
-Copy `include/cerealize.h` into your project, or reference it directly.
+Copy `include/cerialize.h` into your project, or reference it directly.
 
 ```c
-#include "cerealize.h"
+#include "cerialize.h"
 ```
 
 ### 2. Usage Example
@@ -175,4 +175,4 @@ This project is licensed under the MIT License. You are free to use, modify, and
 
 ---
 
-**For more details, see the code in `include/cerealize.h` and the test suite in `test/`.**
+**For more details, see the code in `include/cerialize.h` and the test suite in `test/`.**
