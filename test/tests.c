@@ -30,7 +30,7 @@ int main() {
     const char *CYAN = "\033[0;36m";
     const char *RESET = "\033[0m";
 
-    printf("%sRunning cerealize tests...%s\n", CYAN, RESET);
+    printf("%sRunning cerialize tests...%s\n", CYAN, RESET);
 
     test_summary_t string_summary = run_string_tests();
     test_summary_t number_summary = run_number_tests();
