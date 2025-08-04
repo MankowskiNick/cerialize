@@ -27,13 +27,18 @@ Copy `include/cerialize.h` into your project, or reference it directly.
 
 ```c
 const char* json_str = "{'key': 'value', 'num': 42, 'flag': true, 'missing': null}";
-json result = parse_json(json_str, strlen(json_str));
+json result = deserialize_json(json_str, strlen(json_str));
 if (result.failure) {
     printf("Parse error: %s\n", result.error_text);
+    json_free(&result);  // Clean up even on failure
+    return 1;
 } else {
     // Access result.root (json_object)
     // See Data Types section below
 }
+
+// Always free memory when done
+json_free(&result);
 ```
 
 ---
@@ -146,6 +151,54 @@ gcc -std=c99 -Wall -Wextra -Iinclude -Itest/helpers -Itest/cases -o build/tests 
 - **Null**: Only accepts `null` (case-sensitive).
 - **Object**: Key-value pairs, keys must be strings.
 - **List (Array)**: Elements separated by commas, supports mixed types. Trailing commas are allowed and ignored. Empty lists are supported.
+
+---
+
+## Memory Management
+
+**Important**: Always call `json_free()` to prevent memory leaks.
+
+### Functions
+
+- **`json_free(json* j)`**: Frees all memory associated with a JSON structure
+- **`json_object_free(json_object* obj)`**: Frees memory for individual JSON objects (used internally)
+
+### Features
+
+- **Recursive cleanup**: Automatically frees nested objects, arrays, and strings
+- **NULL safety**: Safe to call on NULL pointers
+- **Double-free protection**: Safe to call multiple times on the same structure
+- **Complete reset**: Resets the structure after freeing
+
+### Usage Examples
+
+#### Basic Usage
+```c
+json result = deserialize_json(json_string, strlen(json_string));
+// Use the result...
+json_free(&result);  // Always free when done
+```
+
+#### Error Handling
+```c
+json result = deserialize_json(json_string, strlen(json_string));
+if (result.failure) {
+    printf("Error: %s\n", result.error_text);
+    json_free(&result);  // Free even on failure
+    return 1;
+}
+// Normal processing...
+json_free(&result);
+```
+
+#### Complex Structures
+```c
+// Even deeply nested structures are cleaned up with one call
+const char* complex = "{\"users\":[{\"name\":\"John\",\"data\":{\"age\":30}}]}";
+json result = deserialize_json(complex, strlen(complex));
+// Use the result...
+json_free(&result);  // Frees everything recursively
+```
 
 ---
 
