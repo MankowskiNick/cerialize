@@ -99,7 +99,7 @@ test_summary_t run_list_tests() {
         } else {
             if (pass) ++positive_passed; else ++positive_failed;
         }
-        free(result.error_text);
+        json_free(&result);
     }
 
     const char *headers[] = {"Input", "Expected", "Result", "Status"};

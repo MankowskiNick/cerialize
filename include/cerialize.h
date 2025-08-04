@@ -65,6 +65,10 @@ typedef struct {
 char* serialize_json(const json* j);
 json deserialize_json(const char* json_string, cereal_size_t length);
 
+// Memory management functions
+void json_free(json* j);
+void json_object_free(json_object* obj);
+
 #define JSON_MAX_ERROR_LENGTH 512
 
 // lexer
@@ -691,6 +695,78 @@ json_object json_get_property(json_object obj, const char* key) {
         }
     }
     return (json_object){ .type = JSON_NULL };
+}
+
+// Memory management function implementations
+void json_object_free(json_object* obj) {
+    if (!obj) return;
+    
+    switch (obj->type) {
+        case JSON_STRING:
+            if (obj->value.string) {
+                free(obj->value.string);
+                obj->value.string = NULL;
+            }
+            break;
+            
+        case JSON_LIST:
+            // Free each item in the list
+            for (cereal_size_t i = 0; i < obj->value.list.count; i++) {
+                json_object_free(&obj->value.list.items[i]);
+            }
+            // Free the items array
+            if (obj->value.list.items) {
+                free(obj->value.list.items);
+                obj->value.list.items = NULL;
+            }
+            obj->value.list.count = 0;
+            break;
+            
+        case JSON_OBJECT:
+            // Free each node
+            for (cereal_size_t i = 0; i < obj->value.object.node_count; i++) {
+                // Free the key
+                if (obj->value.object.nodes[i].key) {
+                    free(obj->value.object.nodes[i].key);
+                    obj->value.object.nodes[i].key = NULL;
+                }
+                // Recursively free the value
+                json_object_free(&obj->value.object.nodes[i].value);
+            }
+            // Free the nodes array
+            if (obj->value.object.nodes) {
+                free(obj->value.object.nodes);
+                obj->value.object.nodes = NULL;
+            }
+            obj->value.object.node_count = 0;
+            break;
+            
+        case JSON_NUMBER:
+        case JSON_BOOL:
+        case JSON_NULL:
+            // No dynamic memory to free
+            break;
+    }
+    
+    // Reset the object type
+    obj->type = JSON_NULL;
+}
+
+void json_free(json* j) {
+    if (!j) return;
+    
+    // Free error text if allocated
+    if (j->error_text) {
+        free(j->error_text);
+        j->error_text = NULL;
+    }
+    
+    // Free the root object
+    json_object_free(&j->root);
+    
+    // Reset the structure
+    j->error_length = 0;
+    j->failure = FALSE;
 }
 
 #endif
