@@ -14,17 +14,17 @@ typedef struct {
 test_summary_t run_string_tests() {
     string_test_case_t string_tests[] = {
         // Positive cases
-        {"'test'", 0, NULL, "test"},
-        {"'abc'", 0, NULL, "abc"},
-        {"'hello world'", 0, NULL, "hello world"},
-        {"'123'", 0, NULL, "123"},
-        {"'!@#$%^&*()'", 0, NULL, "!@#$%^&*()"},
+        {"\"test\"", 0, NULL, "test"},
+        {"\"abc\"", 0, NULL, "abc"},
+        {"\"hello world\"", 0, NULL, "hello world"},
+        {"\"123\"", 0, NULL, "123"},
+        {"\"!@#$%^&*()\"", 0, NULL, "!@#$%^&*()"},
         // Negative cases
-        {"test'", 1, "Missing opening quote", NULL},
-        {"'test", 1, "Missing closing quote", NULL},
-        {"''", 1, "Empty string not allowed", NULL},
-        {"'abc", 1, "Unclosed string", NULL},
-        {"'abc\n'", 1, "Newline in string not allowed", NULL},
+        {"test\"", 1, "Missing opening quote", NULL},
+        {"\"test", 1, "Missing closing quote", NULL},
+        {"\"\"", 1, "Empty string not allowed", NULL},
+        {"\"abc", 1, "Unclosed string", NULL},
+        {"\"abc\n\"", 1, "Newline in string not allowed", NULL},
     };
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";

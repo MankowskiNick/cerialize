@@ -116,11 +116,11 @@ test_summary_t run_serialize_tests() {
         { make_json_list((json[]){ make_json_number(1), make_json_number(2) }, 2), "[1.000000,2.000000]", 0, NULL },
         // Empty list
         { make_json_list(NULL, 0), "[]", 0, NULL },
-        // Object { 'a':1, 'b':2 }
+        // Object { \"a\":1, \"b\":2 }
         { make_json_object((const char*[]){ "a", "b" }, (json[]){ make_json_number(1), make_json_number(2) }, 2), "{a:1.000000,b:2.000000}", 0, NULL },
         // Empty object
         { make_json_object(NULL, NULL, 0), "{}", 0, NULL },
-        // Nested object { 'x':[true,null] }
+        // Nested object { \"x\":[true,null] }
         { make_json_object((const char*[]){ "x" }, (json[]){ make_json_list((json[]){ make_json_bool(1), make_json_null() }, 2) }, 1), "{x:[true,null]}", 0, NULL },
         // Should fail: unknown type (simulate by passing empty json)
         { { .root = { .type = 99 } }, NULL, 1, NULL },
