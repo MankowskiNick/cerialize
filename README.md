@@ -26,7 +26,7 @@ Copy `include/cerialize.h` into your project, or reference it directly.
 ### 2. Usage Example
 
 ```c
-const char* json_str = "{'key': 'value', 'num': 42, 'flag': true, 'missing': null}";
+const char* json_str = "{\"key\": \"value\", \"num\": 42, \"flag\": true, \"missing\": null}";
 json result = deserialize_json(json_str, strlen(json_str));
 if (result.failure) {
     printf("Parse error: %s\n", result.error_text);
@@ -145,7 +145,7 @@ gcc -std=c99 -Wall -Wextra -Iinclude -Itest/helpers -Itest/cases -o build/tests 
 
 ## Supported JSON Types
 
-- **String**: Must be enclosed in single quotes (`'example'`). Newlines inside strings are not allowed.
+- **String**: Must be enclosed in single quotes (`\"example\"`). Newlines inside strings are not allowed.
 - **Number**: Supports integers, floats, and exponents. Strict format checking.
 - **Boolean**: Only accepts `true` or `false` (case-sensitive). `1` and `0` are rejected.
 - **Null**: Only accepts `null` (case-sensitive).
