@@ -13,21 +13,21 @@ typedef struct {
 test_summary_t run_object_tests() {
     object_test_case_t object_tests[] = {
         // Positive cases
-        {"{'example':{'nested':{'key':'value'},'name':'example','value':42}}", 0, NULL},
-        {"{'example':{'name':'example','value':42,'nested':{'key':'value'}}}", 0, NULL},
-        {"{  'example'  :  {  'nested'  :  {  'key'  :  'value'  }  ,  'name'  :  'example'  ,  'value'  :  42  }  }", 0, NULL},
-        {"{\n\t'example' : {\n\t\t'nested' : {\n\t\t\t'key' : 'value'\n\t\t},\n\t\t'name' : 'example',\n\t\t'value' : 42\n\t}\n}", 0, NULL},
-        {"   { 'a' : 1, 'b' : 2 }   ", 0, NULL},
-        {"{\n  'x' : 10,\n\n  'y' : 20\n}\n", 0, NULL},
-        {"{\t'a' : 123 ,\t'b' : 456 }", 0, NULL},
+        {"{\"example\":{\"nested\":{\"key\":\"value\"},\"name\":\"example\",\"value\":42}}", 0, NULL},
+        {"{\"example\":{\"name\":\"example\",\"value\":42,\"nested\":{\"key\":\"value\"}}}", 0, NULL},
+        {"{  \"example\"  :  {  \"nested\"  :  {  \"key\"  :  \"value\"  }  ,  \"name\"  :  \"example\"  ,  \"value\"  :  42  }  }", 0, NULL},
+        {"{\n\t\"example\" : {\n\t\t\"nested\" : {\n\t\t\t\"key\" : \"value\"\n\t\t},\n\t\t\"name\" : \"example\",\n\t\t\"value\" : 42\n\t}\n}", 0, NULL},
+        {"   { \"a\" : 1, \"b\" : 2 }   ", 0, NULL},
+        {"{\n  \"x\" : 10,\n\n  \"y\" : 20\n}\n", 0, NULL},
+        {"{\t\"a\" : 123 ,\t\"b\" : 456 }", 0, NULL},
         // Negative cases
-        {"{'example': { 'nested': { 'key': value }}}", 1, "Missing quotes around value"},
-        {"{ 'a': }", 1, "Missing value for 'a'"},
-        {"{ 'a' 1 }", 1, "Missing colon between key and value"},
-        {"{ 'a': 1, 'b' }", 1, "Missing value for 'b'"},
-        {"{ 'a': 1, , 'b': 2 }", 1, "Extra comma"},
-        {"{ 'a': 1 'b': 2 }", 1, "Missing comma between pairs"},
-        {"{ 'a': 1, 'b': 2", 1, "Unclosed object"},
+        {"{\"example\": { \"nested\": { \"key\": value }}}", 1, "Missing quotes around value"},
+        {"{ \"a\": }", 1, "Missing value for \"a\""},
+        {"{ \"a\" 1 }", 1, "Missing colon between key and value"},
+        {"{ \"a\": 1, \"b\" }", 1, "Missing value for \"b\""},
+        {"{ \"a\": 1, , \"b\": 2 }", 1, "Extra comma"},
+        {"{ \"a\": 1 \"b\": 2 }", 1, "Missing comma between pairs"},
+        {"{ \"a\": 1, \"b\": 2", 1, "Unclosed object"},
     };
     const char *GREEN = "\033[0;32m";
     const char *RED = "\033[0;31m";
@@ -71,8 +71,8 @@ test_summary_t run_object_tests() {
         format_input_display(tc->input, input_display, sizeof(input_display));
         strcpy(rows[i].input_display, input_display);
         strcpy(rows[i].expected, ""); // Not used for object tests, leave empty
-        strcpy(rows[i].result, result_str); // 'Object' or 'Error'
-        strcpy(rows[i].status, status);    // 'PASS' or 'FAIL'
+        strcpy(rows[i].result, result_str); // \"Object\" or \"Error\"
+        strcpy(rows[i].status, status);    // \"PASS\" or \"FAIL\"
         rows[i].color = color;
         rows[i].reset = RESET;
         if (tc->should_fail) {

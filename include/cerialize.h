@@ -335,8 +335,6 @@ json_list json_parse_list(const char* json_string, cereal_size_t length, cereal_
     }
     (*i)++; // move past '['
 
-    int depth = 0;
-
     // count number of elements in the list
     cereal_size_t count = 0;
     bool_t found_closing_square = FALSE;
