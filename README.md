@@ -17,10 +17,10 @@
 
 ### 1. Add to Your Project
 
-Copy `include/cerialize.h` into your project, or reference it directly.
+Copy `include/cerialize/cerialize.h` into your project, or reference it directly.
 
 ```c
-#include "cerialize.h"
+#include "cerialize/cerialize.h"
 ```
 
 ### 2. Usage Example
@@ -228,4 +228,4 @@ This project is licensed under the MIT License. You are free to use, modify, and
 
 ---
 
-**For more details, see the code in `include/cerialize.h` and the test suite in `test/`.**
+**For more details, see the code in `include/cerialize/cerialize.h` and the test suite in `test/`.**

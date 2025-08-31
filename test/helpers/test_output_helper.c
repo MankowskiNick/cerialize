@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include "test_output_helper.h"
+#include <stdio.h>
+#include <string.h>
 
 void print_test_summary(int positive_passed, int positive_failed, int negative_passed, int negative_failed, size_t total) {
     const char *GREEN = "\033[0;32m";
@@ -14,9 +17,6 @@ void print_test_summary(int positive_passed, int positive_failed, int negative_p
         negative_failed > 0 ? RED : GREEN, negative_failed, RESET);
     printf("  Total: %zu\n", total);
 }
-#include "test_output_helper.h"
-#include <stdio.h>
-#include <string.h>
 
 void print_test_row(size_t index, const char* input_display, const char* result_str, const char* status, const char* color, const char* reset, int input_width, int result_width, int status_width) {
     printf("| %-3zu | %-*s | %-*s | %s%-*s%s |\n",
