@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "cerialize.h"
+#include "cerialize/cerialize.h"
 #include "../helpers/test_utils.h"
 
 typedef struct {

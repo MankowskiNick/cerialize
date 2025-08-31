@@ -1,7 +1,7 @@
 #ifndef TEST_LIST_H
 #define TEST_LIST_H
 
-#include "../../include/cerialize.h"
+#include "../../include/cerialize/cerialize.h"
 #include "../helpers/test_utils.h"
 #include "../helpers/test_output_helper.h"
 #include <assert.h>
